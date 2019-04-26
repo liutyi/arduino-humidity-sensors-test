@@ -40,6 +40,8 @@ UTFT LCD(ILI9486, 38, 39, 40, 41);
 // SD Card PIN
 const int SDCARD = 53;
 File logfile;
+// Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
+String csvheader = "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,";
 
 // Variables
 int x;
@@ -57,12 +59,14 @@ void setupSD ()
   // Setup SD
   LCD.print("Initializing SD card...", LEFT, 1);
   pinMode(SDCARD, OUTPUT);
-  if (!SD.begin(SDCARD, SPI_HALF_SPEED)) {
+  if (!SD.begin(SDCARD/*, SPI_HALF_SPEED*/)) {
     LCD.print("Card failed, or not present", LEFT, 18);
     return;
   }
   LCD.print("card initialized.", LEFT, 18);
-  logfile = SD.open("sensors.txt", O_RDWR | O_CREAT );
+  logfile = SD.open("sensors.csv", FILE_WRITE );
+  // CSV Header
+  logfile.println(csvheader);
   logfile.close();
 }
 
@@ -90,11 +94,6 @@ void drawTable ()
   LCD.setColor(150, 150, 150);
   LCD.setFont(BigFont);
   LCD.print("SHT2 SHT3 BME+ Si7x HDCx SHT8", CENTER, 18);
-  //  for (uint8_t port = 1; port < 9; port++) {
-  //    x = 20;
-  //    y = 18 + (28 * port);
-  //    LCD.printNumI(port, x, y);
-  //  }
   // Gray Frame
   LCD.setColor(60, 60, 60);
   LCD.drawRect(0, 14, 479, 305);
@@ -242,21 +241,22 @@ void readSensors ()
       x = 38 + (i * 80); y = 12 + 46 + (28 * port);
       LCD.setColor(255, 255, 0);
       LCD.printNumF (temp, 2, x, y, '.', 5);
-      csvline += String(temp) + "," + String(hum) + ",";
+      csvline  += /*String(temp) + "," + */String(hum) + ",";
       dev++;
     }
   }
+  delay (500);
   Serial.println(csvline);
-  logfile = SD.open("sensors.txt");
+  logfile = SD.open("sensors.csv", FILE_WRITE );  
   if (logfile) {
     csvline = String(seconds) + "," + csvline;
     logfile.println(csvline);
+    LCD.print(csvline, LEFT, 280);    
     logfile.close();
-    LCD.print(csvline, LEFT, 280);
   } else {
-    LCD.print("Cannot write to sensors.txt", LEFT, 280);
+    LCD.print("Cannot write to sensors.csv", LEFT, 280);
   }
-  delay (1000);
+  delay (500);
 }
 
 void stop_multiplexors()
@@ -282,8 +282,8 @@ void setup()
   //  LCD.setBrightness(16);
   //  LCD.fillScr(90,90,90);
 
-  setupSD ();
   Serial.begin(115200);
+  setupSD ();
   stop_multiplexors();
   // Clear the screen and draw the frame
   drawTable ();
