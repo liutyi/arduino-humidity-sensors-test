@@ -39,6 +39,7 @@ UTFT LCD(ILI9486, 38, 39, 40, 41);
 
 // SD Card PIN
 const int SDCARD = 53;
+File logfile;
 
 // Variables
 int x;
@@ -56,11 +57,13 @@ void setupSD ()
   // Setup SD
   LCD.print("Initializing SD card...", LEFT, 1);
   pinMode(SDCARD, OUTPUT);
-  if (!SD.begin(SDCARD)) {
+  if (!SD.begin(SDCARD, SPI_HALF_SPEED)) {
     LCD.print("Card failed, or not present", LEFT, 18);
     return;
   }
   LCD.print("card initialized.", LEFT, 18);
+  logfile = SD.open("sensors.txt", O_RDWR | O_CREAT );
+  logfile.close();
 }
 
 void drawTable ()
@@ -87,11 +90,11 @@ void drawTable ()
   LCD.setColor(150, 150, 150);
   LCD.setFont(BigFont);
   LCD.print("SHT2 SHT3 BME+ Si7x HDCx SHT8", CENTER, 18);
-//  for (uint8_t port = 1; port < 9; port++) {
-//    x = 20;
-//    y = 18 + (28 * port);
-//    LCD.printNumI(port, x, y);
-//  }
+  //  for (uint8_t port = 1; port < 9; port++) {
+  //    x = 20;
+  //    y = 18 + (28 * port);
+  //    LCD.printNumI(port, x, y);
+  //  }
   // Gray Frame
   LCD.setColor(60, 60, 60);
   LCD.drawRect(0, 14, 479, 305);
@@ -164,7 +167,14 @@ void readSensors ()
 {
   float hum;
   float temp;
+  long seconds;
+  String csvline = "";
+  seconds = millis() / 1000;
   LCD.setFont(SmallFont);
+  LCD.setBackColor(64, 64, 64);
+  LCD.setColor(0, 0, 0);
+  LCD.printNumI (seconds, 2, 307);
+
   LCD.setBackColor(0, 0, 0);
   for (uint8_t port = 0; port < 8; port++) {
     uint8_t* dev = I2CMultiplexer.scan(port);
@@ -225,7 +235,6 @@ void readSensors ()
         i = 2;
         hum = dht12.readHumidity();
         temp = dht12.readTemperature();
-        delay (100);
       }
       x = (i * 80); y = 44 + (28 * port);
       LCD.setColor(0, 0, 255);
@@ -233,12 +242,20 @@ void readSensors ()
       x = 38 + (i * 80); y = 12 + 46 + (28 * port);
       LCD.setColor(255, 255, 0);
       LCD.printNumF (temp, 2, x, y, '.', 5);
+      csvline += String(temp) + "," + String(hum) + ",";
       dev++;
     }
   }
-  LCD.setBackColor(64, 64, 64);
-  LCD.setColor(0, 0, 0);
-  LCD.printNumI (millis()/1000, 20, 307);
+  Serial.println(csvline);
+  logfile = SD.open("sensors.txt");
+  if (logfile) {
+    csvline = String(seconds) + "," + csvline;
+    logfile.println(csvline);
+    logfile.close();
+    LCD.print(csvline, LEFT, 280);
+  } else {
+    LCD.print("Cannot write to sensors.txt", LEFT, 280);
+  }
   delay (1000);
 }
 
@@ -266,6 +283,7 @@ void setup()
   //  LCD.fillScr(90,90,90);
 
   setupSD ();
+  Serial.begin(115200);
   stop_multiplexors();
   // Clear the screen and draw the frame
   drawTable ();
@@ -273,7 +291,6 @@ void setup()
   initSensors ();
   delay(1000);
   drawTable ();
-
 }
 
 void loop()
