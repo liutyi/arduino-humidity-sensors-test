@@ -66,11 +66,11 @@ void setupSD ()
     return;
   } else {
     LCD.print("card initialized.", LEFT, 18);
-    logfile1 = SD.open("sensors.csv", FILE_WRITE );
+    logfile1 = SD.open("rh.csv", FILE_WRITE );
     // CSV Header
     logfile1.println(csvheader);
     logfile1.close();
-    logfile2 = SD.open("sensors.csv", FILE_WRITE );
+    logfile2 = SD.open("t.csv", FILE_WRITE );
     logfile2.println(csvheader);
     logfile2.close();
   }
