@@ -39,7 +39,9 @@ UTFT LCD(ILI9486, 38, 39, 40, 41);
 
 // SD Card PIN
 const int SDCARD = 53;
-File logfile;
+File logfile1;
+File logfile2;
+
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
 String csvheader = "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,";
 
@@ -62,12 +64,16 @@ void setupSD ()
   if (!SD.begin(SDCARD/*, SPI_HALF_SPEED*/)) {
     LCD.print("Card failed, or not present", LEFT, 18);
     return;
+  } else {
+    LCD.print("card initialized.", LEFT, 18);
+    logfile1 = SD.open("sensors.csv", FILE_WRITE );
+    // CSV Header
+    logfile1.println(csvheader);
+    logfile1.close();
+    logfile2 = SD.open("sensors.csv", FILE_WRITE );
+    logfile2.println(csvheader);
+    logfile2.close();
   }
-  LCD.print("card initialized.", LEFT, 18);
-  logfile = SD.open("sensors.csv", FILE_WRITE );
-  // CSV Header
-  logfile.println(csvheader);
-  logfile.close();
 }
 
 void drawTable ()
@@ -164,17 +170,20 @@ void initSensors ()
 
 void readSensors ()
 {
-  float hum;
-  float temp;
+  float hum = 0;
+  float temp = 0;
   long seconds;
-  String csvline = "";
+  String csvline1 = "";
+  String csvline2 = "";
+
+  //uptime in seconds
   seconds = millis() / 1000;
   LCD.setFont(SmallFont);
   LCD.setBackColor(64, 64, 64);
   LCD.setColor(0, 0, 0);
   LCD.printNumI (seconds, 2, 307);
-
   LCD.setBackColor(0, 0, 0);
+
   for (uint8_t port = 0; port < 8; port++) {
     uint8_t* dev = I2CMultiplexer.scan(port);
     while (*dev) {
@@ -241,22 +250,35 @@ void readSensors ()
       x = 38 + (i * 80); y = 12 + 46 + (28 * port);
       LCD.setColor(255, 255, 0);
       LCD.printNumF (temp, 2, x, y, '.', 5);
-      csvline  += /*String(temp) + "," + */String(hum) + ",";
+      csvline1  += String(hum) + ",";
+      csvline2  += String(temp) + ",";
       dev++;
     }
   }
-  delay (500);
-  Serial.println(csvline);
-  logfile = SD.open("sensors.csv", FILE_WRITE );  
-  if (logfile) {
-    csvline = String(seconds) + "," + csvline;
-    logfile.println(csvline);
-    LCD.print(csvline, LEFT, 280);    
-    logfile.close();
+  Serial.println(csvline1);
+  //Serial.println(csvline2);
+  delay (200);
+  // Write to humidity log file
+  logfile1 = SD.open("rh.csv", FILE_WRITE );
+  if (logfile1) {
+    csvline1 = String(seconds) + "," + csvline1;
+    logfile1.println(csvline1);
+    LCD.print(csvline1, LEFT, 280);
+    logfile1.close();
   } else {
-    LCD.print("Cannot write to sensors.csv", LEFT, 280);
+    LCD.print("Cannot write to rh.csv", LEFT, 280);
   }
-  delay (500);
+  // Write to temperatures log file
+  logfile2 = SD.open("t.csv", FILE_WRITE );
+  if (logfile2) {
+    csvline2 = String(seconds) + "," + csvline2;
+    logfile2.println(csvline2);
+    LCD.print(csvline2, LEFT, 290);
+    logfile2.close();
+  } else {
+    LCD.print("Cannot write to t.csv", LEFT, 290);
+  }
+  delay (800);
 }
 
 void stop_multiplexors()
