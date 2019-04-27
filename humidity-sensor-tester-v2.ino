@@ -29,11 +29,21 @@ DHT12 dht12;
 extern uint8_t SmallFont[];
 extern uint8_t SevenSegNumFont[];
 extern uint8_t BigFont[];
+uint8_t multiplexer[4] = {112, 113, 114, 115};
+// Type of sensor
+const uint8_t SHT2X = 0; /* include SHT20, SHT21, SHT25, HTU21d*/
+const uint8_t SI70XX = 1; /* includes Si7021 */
+const uint8_t HDC10xx = 2; /* includes HDC1080 */
+const uint8_t SHT3X = 3; /* include SHT30, SHT31, SHT35, SHT88*/
+const uint8_t BME280 = 4; /* includes BME280 */
+const uint8_t BME680 = 5; /* includes BME680 */
+const uint8_t DHT1X = 6; /* includes DHT12 */
+const uint8_t DHT2X = 7; /* includes DHT22 */
+
 
 /*Create an I2CMultiplexer object, the address of I2CMultiplexer is 0x70*/
-DFRobot_I2CMultiplexer I2CMultiplexer(0x70);
-DFRobot_I2CMultiplexer I2CMultiplexer2(0x71);
-DFRobot_I2CMultiplexer I2CMultiplexer3(0x72);
+DFRobot_I2CMultiplexer I2CMultiplexer(multiplexer[0]);
+
 // SCREEN Type and PINs
 UTFT LCD(ILI9486, 38, 39, 40, 41);
 
@@ -44,8 +54,16 @@ File logfile2;
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
 String csvheader = "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,";
+// Variables for file rotation 00-99
+#define T_FILE_BASE_NAME "temprt"
+#define RH_FILE_BASE_NAME "humidt"
+const uint8_t T_BASE_NAME_SIZE = sizeof(T_FILE_BASE_NAME) - 1;
+const uint8_t RH_BASE_NAME_SIZE = sizeof(RH_FILE_BASE_NAME) - 1;
+char tFileName[] = T_FILE_BASE_NAME "00.csv";
+char rhFileName[] = RH_FILE_BASE_NAME "00.csv";
 
-// Variables
+
+// Other Variables
 int x;
 int y;
 int i2cPort;
@@ -66,14 +84,36 @@ void setupSD ()
     return;
   } else {
     LCD.print("card initialized.", LEFT, 18);
-    logfile1 = SD.open("rh.csv", FILE_WRITE );
-    // CSV Header
-    logfile1.println(csvheader);
-    logfile1.close();
-    logfile2 = SD.open("t.csv", FILE_WRITE );
-    logfile2.println(csvheader);
-    logfile2.close();
+    while (SD.exists(tFileName)) {
+      if (tFileName[T_BASE_NAME_SIZE + 1] != '9') {
+        tFileName[T_BASE_NAME_SIZE + 1]++;
+      } else if (tFileName[T_BASE_NAME_SIZE] != '9') {
+        tFileName[T_BASE_NAME_SIZE + 1] = '0';
+        tFileName[T_BASE_NAME_SIZE]++;
+      } else {
+        LCD.print("Can't generate temperature file name", LEFT, 36);
+        return;
+      }
+      while (SD.exists(rhFileName)) {
+        if (rhFileName[RH_BASE_NAME_SIZE + 1] != '9') {
+          rhFileName[RH_BASE_NAME_SIZE + 1]++;
+        } else if (rhFileName[RH_BASE_NAME_SIZE] != '9') {
+          rhFileName[RH_BASE_NAME_SIZE + 1] = '0';
+          rhFileName[RH_BASE_NAME_SIZE]++;
+        } else {
+          LCD.print("Can't generate humidity file name", LEFT, 36);
+          return;
+        }
+      }
+    }
   }
+  // CSV Header
+  logfile1 = SD.open(rhFileName, FILE_WRITE );
+  logfile1.println(csvheader);
+  logfile1.close();
+  logfile2 = SD.open(tFileName, FILE_WRITE );
+  logfile2.println(csvheader);
+  logfile2.close();
 }
 
 void drawTable ()
@@ -259,24 +299,24 @@ void readSensors ()
   //Serial.println(csvline2);
   delay (200);
   // Write to humidity log file
-  logfile1 = SD.open("rh.csv", FILE_WRITE );
+  logfile1 = SD.open(rhFileName, FILE_WRITE );
   if (logfile1) {
     csvline1 = String(seconds) + "," + csvline1;
     logfile1.println(csvline1);
     LCD.print(csvline1, LEFT, 280);
     logfile1.close();
   } else {
-    LCD.print("Cannot write to rh.csv", LEFT, 280);
+    LCD.print("Cannot write RH to file", LEFT, 280);
   }
   // Write to temperatures log file
-  logfile2 = SD.open("t.csv", FILE_WRITE );
+  logfile2 = SD.open(tFileName, FILE_WRITE );
   if (logfile2) {
     csvline2 = String(seconds) + "," + csvline2;
     logfile2.println(csvline2);
     LCD.print(csvline2, LEFT, 290);
     logfile2.close();
   } else {
-    LCD.print("Cannot write to t.csv", LEFT, 290);
+    LCD.print("Cannot write t to file", LEFT, 290);
   }
   delay (800);
 }
