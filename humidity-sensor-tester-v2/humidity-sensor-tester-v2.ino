@@ -40,7 +40,7 @@ uint8_t multiplexer[3] = {112, 113, 114};
 #define EMPTY 0 /* slot is empty or sensor disabled */
 #define SHT2X 1 /* include SHT20, SHT21, SHT25, HTU21d*/
 #define SI70XX 2 /* includes Si7021 */
-#define HDC10xx 3 /* includes HDC1080 */
+#define HDC1X 3 /* includes HDC1080 */
 #define SHT3X 4 /* include SHT30, SHT31, SHT35, SHT88*/
 #define BME280 5 /* includes BME280 */
 #define BME680 6 /* includes BME680 */
@@ -79,14 +79,14 @@ const uint8_t sensor[3][8][3][3] =
     {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HDC10xx, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HDC10xx, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} }
+    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} }
   }/*,
   {
     {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
@@ -101,21 +101,36 @@ const uint8_t sensor[3][8][3][3] =
 };
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
-#define SHT3X_CMD_SIZE 2
+#define SHT2X_CMD_SIZE 2
 #define SHT2X_DATA_SIZE 3
-#define SHT3X_DATA_SIZE 6
 #define SHT3X_MEASUREMENT_DELAY 15  /* HIGH = 15 MID=6 LOW=4 */
 #define SHT2X_MEASUREMENT_DELAY 10
 #define SHT_RESET_DURATION 20 /* should be 15 */
 #define SHT2X_READ_T 0xE3
 #define SHT2X_READ_RH 0xE5
 #define SHT2X_RESET 0xFE
-const uint16_t SHT3X_READ_ALL      = 0x2400; /* HIGH=0x2400 MID=0x240b LOW=0x2416*/
-const uint16_t SHT3X_RESET         = 0x30A2;
-const uint16_t SHT3X_HEATER_OFF    = 0x3066;
-const uint16_t SHT3X_CLEAR_STATUS  = 0x3041;
+
+#define SHT3X_CMD_SIZE 2
+#define SHT3X_DATA_SIZE 6
+#define SHT3X_CLOCK_STRETCH 0x2C
+#define SHT3X_HRES_READ 0x06
+#define SHT3X_CONTROL 0x30
+#define SHT3X_RESET 0xA2
+#define SHT3X_HEATER_OFF 0x66
+#define SHT3X_CLEAR_STATUS 0x41
+
+#define HDC1X_CONFIG_CMD_SIZE 3
+#define HDC1X_DATA_SIZE 4
+#define HDC1X_READ_T 0x00
+#define HDC1X_READ_RH 0x01
+#define HDC1X_CONFIG 0x02 /* MSB */
+#define HDC1X_HRES 0x00
+#define HDC1X_RESET 0x80 /* MSB */
+#define HDC1X_MEASUREMENT_DELAY 20
+#define HDC1X_RESET_DURATION 20
+
 uint8_t readBuffer[6] = {0, 0, 0, 0, 0, 0}; //buffer for read from sensor
-uint8_t writeBuffer[2] = {0, 0};            //variable to devide long i2c command
+uint8_t writeBuffer[3] = {0, 0, 0};            //variable to devide long i2c command
 uint32_t timeout;
 
 // Other Variables
@@ -218,22 +233,26 @@ void initSensors ()
   {
     for (ibus = 0; ibus < 8; ibus++)
     {
+      Serial.print("TRYING to switch i2c bus = ");
+      Serial.print(ibus + 1);
+      Serial.print("\t of mux = ");
+      Serial.print(imux, HEX);
+      Serial.println();
       choose_i2c_bus(imux, ibus + 1);
-      Serial.print ("choose_i2c_bus\t");
-      Serial.print (imux);
-      Serial.print (",");
-      Serial.println (ibus + 1);
+      Serial.println("switch done");
       for (idev = 0; idev < 3; idev++)
       {
         type = sensor[imux][ibus][idev][get_type];
         addr = sensor[imux][ibus][idev][get_address];
         colm = (sensor[imux][ibus][idev][get_collumn] - 1);
         if (type != EMPTY) {
+          Serial.print("TRYING TO Init type = ");
+          Serial.print(type);
+          Serial.print("\t addr = ");
+          Serial.print(addr, HEX);
+          Serial.println();
           init_sensor(type, addr);
-          Serial.print ("init_sensor\t");
-          Serial.print (type);
-          Serial.print (",");
-          Serial.println (addr);
+
         }
         if (colm != NOCOLM) {
           x = 20 + (colm * 80); y = 46 + (28 * ibus);
@@ -245,13 +264,19 @@ void initSensors ()
 }
 
 
-void choose_i2c_bus(uint8_t smux, uint8_t sbus) {
-  for (uint8_t i = 0; i < sizeof(multiplexer); i++) {
+void choose_i2c_bus(uint8_t mux, uint8_t bus) {
+  for (uint8_t i = 0; i < 3; i++) {
     uint8_t addr = multiplexer[i];
+    Serial.print ("before begin transmition to:\t");
+    Serial.print (addr);
+    Serial.print ("\titerator:\t");
+    Serial.print (i);
     Wire.beginTransmission(addr);
-    if ( i == smux ) {
-      Wire.write(sbus);
+    if ( i == mux ) {
+      Serial.println (bus);
+      Wire.write(bus);
     } else {
+      Serial.println (0);
       Wire.write(0);
     }
     Wire.endTransmission();
@@ -260,10 +285,10 @@ void choose_i2c_bus(uint8_t smux, uint8_t sbus) {
 }
 
 void clean_buffers () {
-  for (uint8_t i = 0; i < 6; i++) {
+  for (uint8_t i = 0; i < sizeof(readBuffer); i++) {
     readBuffer[i] = 0;
   }
-  for (uint8_t i = 0; i < 2; i++) {
+  for (uint8_t i = 0; i < sizeof (writeBuffer); i++) {
     writeBuffer[i] = 0;
   }
 }
@@ -272,17 +297,35 @@ bool init_sensor (uint8_t type, uint8_t addr)
 {
   clean_buffers();
   if (type == SHT2X) {
+    Serial.print("SHT2X Init  ");
+    Serial.print(type);
+    Serial.print("\t addr = ");
+    Serial.print(addr, HEX);
+    Serial.print("\t com = ");
+    Serial.print(SHT2X_RESET, HEX);
+    Serial.println();
     Wire.beginTransmission(addr);
     Wire.write(SHT2X_RESET);
-    delay(SHT_RESET_DURATION);
     Wire.endTransmission();
+    delay(SHT_RESET_DURATION);
   }
   if (type == SHT3X) {
-    writeBuffer[0] = SHT2X_RESET >> 8;
-    writeBuffer[1] = SHT2X_RESET & 0xff;
+    Serial.print("SHT3X Init  ");
+    Serial.print(type);
+    Serial.print("\t addr = ");
+    Serial.print(addr, HEX);
+    Serial.print("\t com = ");
+    Serial.print(SHT3X_CONTROL, HEX);
+    Serial.print("\t");
+    Serial.print(SHT3X_RESET, HEX);
+    Serial.println();
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = SHT3X_CONTROL;
+    writeBuffer[1] = SHT3X_RESET;
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
       Wire.write(writeBuffer[i]);
     }
+    Wire.endTransmission();
     delay(SHT_RESET_DURATION);
     /*
       for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
@@ -292,24 +335,44 @@ bool init_sensor (uint8_t type, uint8_t addr)
       Wire.write(*SHT3X_CLEAR_STATUS[i]);
       }
     */
-    Wire.endTransmission();
   }
+  if (type == HDC1X) {
+    Serial.print("HDC1X Init  ");
+    Serial.print(type);
+    Serial.print("\t addr = ");
+    Serial.print(addr, HEX);
+    Serial.print("\t com = ");
+    Serial.print(HDC1X_CONFIG, HEX);
+    Serial.print("\t");
+    Serial.print(HDC1X_RESET, HEX);
+    Serial.print("\t");
+    Serial.print(HDC1X_HRES, HEX);
+    Serial.println();
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = HDC1X_CONFIG;
+    writeBuffer[1] = HDC1X_RESET;
+    writeBuffer[2] = HDC1X_HRES;
+    for (int i = 0; i < HDC1X_CONFIG_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(HDC1X_RESET_DURATION);
 
+  }
 }
 
-float get_humidity (uint8_t type, uint8_t addr)
+float get_humidity (uint8_t gtype, uint8_t gaddr)
 {
   float xhum = 0;
   uint16_t result = 0;
   uint8_t z = 0;
   clean_buffers();
-  if (type == SHT2X) {
-    Wire.beginTransmission(addr);
-    Serial.println ("SHT2X - case");
+  if ((gtype == SHT2X) | (gtype == SI70XX)) {
+    Wire.beginTransmission(gaddr);
     Wire.write(SHT2X_READ_RH);
     Wire.endTransmission();
     delay(SHT2X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT2X_DATA_SIZE);
+    z = Wire.requestFrom(gaddr, SHT2X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < SHT2X_DATA_SIZE) {
@@ -320,6 +383,8 @@ float get_humidity (uint8_t type, uint8_t addr)
         }
         result = (readBuffer[0] << 8) + readBuffer[1];
         result &= ~0x0003;
+        Serial.print("SHT2X rh result = ");
+        Serial.println(result);
         xhum = (float)result;
         xhum *= 125;
         xhum /= 65536;
@@ -327,17 +392,16 @@ float get_humidity (uint8_t type, uint8_t addr)
       }
     }
   }
-  if ( type == SHT3X) {
-    Serial.println ("SHT3X - case");
-    writeBuffer[0] = SHT3X_READ_ALL >> 8;
-    writeBuffer[1] = SHT3X_READ_ALL & 0xff;
-    Wire.beginTransmission(addr);
+  if (gtype == SHT3X) {
+    writeBuffer[0] = SHT3X_CLOCK_STRETCH;
+    writeBuffer[1] = SHT3X_HRES_READ;
+    Wire.beginTransmission(gaddr);
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
       Wire.write(writeBuffer[i]);
     }
     Wire.endTransmission();
     delay(SHT3X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT3X_DATA_SIZE);
+    z = Wire.requestFrom(gaddr, SHT3X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if  (Wire.available() < SHT3X_DATA_SIZE) {
@@ -346,26 +410,53 @@ float get_humidity (uint8_t type, uint8_t addr)
         for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
           readBuffer[i] = Wire.read();
         }
-        xhum = (readBuffer[3] << 8) + readBuffer[4];
+        result = (readBuffer[3] << 8) + readBuffer[4];
+        Serial.print("SHT3X rh result = ");
+        Serial.println(result);
+        xhum = (float)result;
         xhum *= 100;
         xhum /= 65535;
+      }
+    }
+  }
+  if (gtype == HDC1X) {
+    Wire.beginTransmission(gaddr);
+    Wire.write(HDC1X_READ_RH);
+    Wire.endTransmission();
+    delay(HDC1X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(gaddr, HDC1X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < HDC1X_DATA_SIZE) {
+        delay(HDC1X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < HDC1X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result =  (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x03;
+        Serial.print("HDC1X rh result = ");
+        Serial.println(result);
+        xhum = (float)result;
+        xhum *= 100;
+        xhum /= 65536;
       }
     }
   }
   return xhum;
 }
 
-float get_temperature (uint8_t type, uint8_t addr) {
+float get_temperature (uint8_t gtype, uint8_t gaddr) {
   float xtemp = 0;
   uint16_t result = 0;
   uint8_t z = 0;
   clean_buffers();
-  if (type == SHT2X) {
-    Wire.beginTransmission(addr);
+  if ((gtype == SHT2X) | (gtype == SI70XX)) {
+    Wire.beginTransmission(gaddr);
     Wire.write(SHT2X_READ_T);
     Wire.endTransmission();
     delay(SHT2X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT2X_DATA_SIZE);
+    z = Wire.requestFrom(gaddr, SHT2X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < SHT2X_DATA_SIZE) {
@@ -376,6 +467,8 @@ float get_temperature (uint8_t type, uint8_t addr) {
         }
         result = (readBuffer[0] << 8) + readBuffer[1];
         result &= ~0x0003;
+        Serial.print("t result = ");
+        Serial.print(result);
         xtemp = (float)result;
         xtemp *= 175.72;
         xtemp /= 65536;
@@ -383,16 +476,16 @@ float get_temperature (uint8_t type, uint8_t addr) {
       }
     }
   }
-  if (type == SHT3X) {
-    writeBuffer[0] = SHT3X_READ_ALL >> 8;
-    writeBuffer[1] = SHT3X_READ_ALL & 0xff;
-    Wire.beginTransmission(addr);
+  if (gtype == SHT3X) {
+    writeBuffer[0] = SHT3X_CLOCK_STRETCH;
+    writeBuffer[1] = SHT3X_HRES_READ;
+    Wire.beginTransmission(gaddr);
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
       Wire.write(writeBuffer[i]);
     }
     Wire.endTransmission();
     delay(SHT3X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT3X_DATA_SIZE);
+    z = Wire.requestFrom(gaddr, SHT3X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if  (Wire.available() < SHT3X_DATA_SIZE) {
@@ -401,15 +494,44 @@ float get_temperature (uint8_t type, uint8_t addr) {
         for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
           readBuffer[i] = Wire.read();
         }
-        xtemp = (readBuffer[0] << 8) + readBuffer[1];
+        result = (readBuffer[0] << 8) + readBuffer[1];
+        Serial.print("t result = ");
+        Serial.print(result);
+        xtemp = (float)result;
         xtemp *= 175;
         xtemp /= 65535;
         xtemp -= 45;
       }
     }
   }
+  if (gtype == HDC1X) {
+    Wire.beginTransmission(gaddr);
+    Wire.write(HDC1X_READ_T);
+    Wire.endTransmission();
+    delay(HDC1X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(gaddr, HDC1X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < HDC1X_DATA_SIZE) {
+        delay(HDC1X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < HDC1X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result =  (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x03;
+        Serial.print("t result = ");
+        Serial.print(result);
+        xtemp = (float)result;
+        xtemp *= 165;
+        xtemp /= 65536;
+        xtemp -= 40;
+      }
+    }
+  }
   return xtemp;
 }
+
 void readSensors ()
 {
   float hum = 0;
@@ -441,6 +563,7 @@ void readSensors ()
         type = sensor[imux][ibus][idev][get_type];
         addr = sensor[imux][ibus][idev][get_address];
         colm = (sensor[imux][ibus][idev][get_collumn] - 1);
+        Serial.print("TYPE =");
         Serial.print(type);
         Serial.print("\tMUX= 0x");
         Serial.print(multiplexer[imux], HEX);
@@ -448,10 +571,6 @@ void readSensors ()
         Serial.println(addr, HEX);
         hum = 0;
         temp = 0;
-        Serial.print("hum = ");
-        Serial.print(hum);
-        Serial.print("\ttemp = ");
-        Serial.println(temp);
         if (type != EMPTY) {
           hum = get_humidity(type, addr);
           temp = get_temperature(type, addr);
@@ -516,11 +635,16 @@ void setup()
   // Setup the LCD
   LCD.InitLCD();
   Serial.begin(115200);
+  Serial.println ("Serial begin done");
   setupSD ();
+  Serial.println ("Setup SD done");
   Wire.begin();
+  Serial.println ("Wire begin done");
   // Clear the screen and draw the frame
   drawTable ();
+  Serial.println ("First table draw done");
   initSensors ();
+  Serial.println ("Init Sensors done");
   delay(1000);
   drawTable ();
 }
