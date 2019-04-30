@@ -25,12 +25,12 @@ const String footer = "https://wiki.liutyi.info/";
 const String csvheader = "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,Si7021-1,Si7021-1,Si7021-2,Si7021-2,Si7021-3,Si7021-3,Si7021-4,HTU21d,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080,HDC1080,BME680-2,HDC1080,BME680-2";
 
 // Variables for file rotation 00-99
-#define t_base_name "temprt"
-#define rh_base_name "humidt"
-const uint8_t t_base_name_size = sizeof(t_base_name) - 1;
-const uint8_t rh_base_name_size = sizeof(rh_base_name) - 1;
-char tFileName[] = t_base_name "00.csv";
-char rhFileName[] = rh_base_name "00.csv";
+#define t_base_name "tmprt"
+#define rh_base_name "humdt"
+const uint8_t t_base_name_size = sizeof(t_base_name);
+const uint8_t rh_base_name_size = sizeof(rh_base_name);
+char tFileName[] = t_base_name "000.csv";
+char rhFileName[] = rh_base_name "000.csv";
 
 // Define number and addresses of multiplexers
 uint8_t multiplexer[3] = {112, 113, 114};
@@ -68,14 +68,14 @@ const uint8_t sensor[3][8][3][3] =
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {DHT1X, 3, 92} }
   },
   {
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
     {  {HDC10xx, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
@@ -98,7 +98,23 @@ const uint8_t sensor[3][8][3][3] =
     {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   }*/
 };
-
+// Sensor communication variables
+const uint16_t SHT3X_READ_ALL      = 0x2400; /* HIGH=0x2400 MID=0x240b LOW=0x2416*/
+const uint16_t SHT3X_CMD_SIZE      = 2;
+const uint16_t SHT3X_RESET         = 0x30A2;
+const uint16_t SHT3X_HEATER_OFF    = 0x3066;
+const uint16_t SHT3X_CLEAR_STATUS  = 0x3041;
+const uint8_t  SHT2X_READ_T         = 0xE3; // hold master
+const uint8_t  SHT2X_READ_RH        = 0xE5; // hold master
+const uint8_t  SHT2X_RESET          = 0xFE;
+const uint8_t  SHT2X_DATA_SIZE      = 3;
+const uint8_t  SHT3X_DATA_SIZE      = 6;
+const uint8_t  SHT3X_MEASUREMENT_DELAY   = 15;     /* HIGH = 15 MID=6 LOW=4 */
+const uint8_t  SHT2X_MEASUREMENT_DELAY   = 100;
+const uint8_t SHT_RESET_DURATION    = 15;
+uint8_t readBuffer[6] = {0, 0, 0, 0, 0, 0}; //buffer for read from sensor
+uint8_t writeBuffer[2] = {0, 0};            //variable to devide long i2c command
+uint32_t timeout;
 
 // Other Variables
 int x;
@@ -226,6 +242,7 @@ void initSensors ()
   }
 }
 
+
 void choose_i2c_bus(uint8_t smux, uint8_t sbus) {
   for (uint8_t i = 0; i < sizeof(multiplexer); i++) {
     uint8_t addr = multiplexer[i];
@@ -236,30 +253,33 @@ void choose_i2c_bus(uint8_t smux, uint8_t sbus) {
       Wire.write(0);
     }
     Wire.endTransmission();
-    delay (10);
+    delay (5);
+  }
+}
+
+void clean_buffers (){
+  for (uint8_t i=0; i<6; i++){
+    readBuffer[i]=0;
+  }
+  for (uint8_t i=0; i<2; i++){
+    writeBuffer[i]=0;
   }
 }
 
 bool init_sensor (uint8_t type, uint8_t addr)
 {
-  const uint16_t SHT3X_CMD_SIZE         = 2;
-  const uint16_t SHT3X_RESET            = 0x30A2;
-  const uint16_t SHT3X_HEATER_OFF       = 0x3066;
-  const uint16_t SHT3X_CLEAR_STATUS     = 0x3041;
-  const uint8_t SHT2X_RESET             = 0xFE;
-  const uint8_t SHT_RESET_DURATION      = 15;
-  Wire.beginTransmission(addr);
+  clean_buffers();
   if (type == SHT2X) {
-
+    Wire.beginTransmission(addr);
     Wire.write(SHT2X_RESET);
     delay(SHT_RESET_DURATION);
+    Wire.endTransmission();
   }
   if (type == SHT3X) {
-    uint8_t cmd[SHT3X_CMD_SIZE];
-    cmd[0] = SHT2X_RESET >> 8;
-    cmd[1] = SHT2X_RESET & 0xff;
+    writeBuffer[0] = SHT2X_RESET >> 8;
+    writeBuffer[1] = SHT2X_RESET & 0xff;
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
-      Wire.write(cmd[i]);
+      Wire.write(writeBuffer[i]);
     }
     delay(SHT_RESET_DURATION);
     /*
@@ -270,26 +290,16 @@ bool init_sensor (uint8_t type, uint8_t addr)
       Wire.write(*SHT3X_CLEAR_STATUS[i]);
       }
     */
-
+    Wire.endTransmission();
   }
-  Wire.endTransmission();
+
 }
-const uint8_t  SHT2X_READ_T      = 0xE3;   // hold master
-const uint8_t  SHT2X_READ_RH     = 0xE5; // hold master
-const uint16_t SHT3X_READ_ALL    = 0x2400; /* HIGH=0x2400 MID=0x240b LOW=0x2416*/
-const uint8_t  SHT2X_DATA_SIZE   = 3;
-const uint8_t  SHT3X_DATA_SIZE   = 6;
-const uint8_t  SHT3X_CMD_SIZE    = 2;
-const uint8_t  SHT3X_MEASUREMENT_DELAY   = 15;     /* HIGH = 15 MID=6 LOW=4 */
-const uint8_t  SHT2X_MEASUREMENT_DELAY   = 100;
-uint8_t sht3data[SHT3X_DATA_SIZE] = {0, 0, 0, 0, 0, 0};
-uint8_t sht3cmd[SHT3X_CMD_SIZE] = {0, 0};
-uint8_t sht2data[SHT2X_DATA_SIZE] = {0, 0, 0};
 
 float get_humidity (uint8_t type, uint8_t addr)
 {
   float xhum = 0;
   uint16_t result = 0;
+  clean_buffers();
   if (type == SHT2X) {
     Wire.beginTransmission(addr);
     Serial.println ("SHT2X - case");
@@ -301,9 +311,9 @@ float get_humidity (uint8_t type, uint8_t addr)
       delay(SHT2X_MEASUREMENT_DELAY);
     }
     for (int i = 0; i < SHT2X_DATA_SIZE; i++) {
-      sht2data[i] = Wire.read();
+      readBuffer[i] = Wire.read();
     }
-    result = (sht2data[1] << 8) + sht2data[2];
+    result = (readBuffer[1] << 8) + readBuffer[2];
     result &= ~0x0003;
     xhum = (-6.0 + (125.0 / 65536.0) * (float)result);
     Serial.println ("SHT2X - case2");
@@ -314,11 +324,11 @@ float get_humidity (uint8_t type, uint8_t addr)
   if ( type == SHT3X) {
     Serial.println ("SHT3X - case");
     uint16_t val = 0;
-    sht3cmd[0] = SHT3X_READ_ALL >> 8;
-    sht3cmd[1] = SHT3X_READ_ALL & 0xff;
+    writeBuffer[0] = SHT3X_READ_ALL >> 8;
+    writeBuffer[1] = SHT3X_READ_ALL & 0xff;
     Wire.beginTransmission(addr);
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
-      Wire.write(sht3cmd[i]);
+      Wire.write(writeBuffer[i]);
     }
     Wire.endTransmission();
     delay(SHT3X_MEASUREMENT_DELAY);
@@ -328,9 +338,9 @@ float get_humidity (uint8_t type, uint8_t addr)
     }
 
     for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
-      sht3data[i] = Wire.read();
+      readBuffer[i] = Wire.read();
     }
-    xhum = (sht3data[3] << 8) + sht3data[4];
+    xhum = (readBuffer[3] << 8) + readBuffer[4];
     xhum *= 100;
     xhum /= 65535;
   }
@@ -340,6 +350,7 @@ float get_humidity (uint8_t type, uint8_t addr)
 float get_temperature (uint8_t type, uint8_t addr) {
   float xtemp = 0;
   uint16_t result = 0;
+  clean_buffers();
   if (type == SHT2X) {
     Wire.beginTransmission(addr);
     Wire.write(SHT2X_READ_T);
@@ -350,9 +361,9 @@ float get_temperature (uint8_t type, uint8_t addr) {
       delay(SHT2X_MEASUREMENT_DELAY);
     }
     for (int i = 0; i < SHT2X_DATA_SIZE; i++) {
-      sht2data[i] = Wire.read();
+      readBuffer[i] = Wire.read();
     }
-    result = (sht2data[1] << 8) + sht2data[2];
+    result = (readBuffer[1] << 8) + readBuffer[2];
     result &= ~0x0003;
     xtemp = (-46.85 + (175.72 / 65536.0) * (float)result);
     return xtemp;
@@ -360,11 +371,11 @@ float get_temperature (uint8_t type, uint8_t addr) {
   }
   if (type == SHT3X) {
     uint16_t val;
-    sht3cmd[0] = SHT3X_READ_ALL >> 8;
-    sht3cmd[1] = SHT3X_READ_ALL & 0xff;
+    writeBuffer[0] = SHT3X_READ_ALL >> 8;
+    writeBuffer[1] = SHT3X_READ_ALL & 0xff;
     Wire.beginTransmission(addr);
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
-      Wire.write(sht3cmd[i]);
+      Wire.write(writeBuffer[i]);
     }
     Wire.endTransmission();
     delay(SHT3X_MEASUREMENT_DELAY);
@@ -372,13 +383,13 @@ float get_temperature (uint8_t type, uint8_t addr) {
     while (Wire.available() < SHT3X_DATA_SIZE) {
       delay(SHT3X_MEASUREMENT_DELAY);
     }
-      for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
-        sht3data[i] = Wire.read();
-      }
-      xtemp = (sht3data[0] << 8) + sht3data[1];
-      xtemp *= 175;
-      xtemp /= 65535;
-      xtemp -= 45;
+    for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
+      readBuffer[i] = Wire.read();
+    }
+    xtemp = (readBuffer[0] << 8) + readBuffer[1];
+    xtemp *= 175;
+    xtemp /= 65535;
+    xtemp -= 45;
 
 
   }
