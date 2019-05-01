@@ -238,26 +238,13 @@ void initSensors ()
   {
     for (bus = 0; bus < 8; bus++)
     {
-      Serial.print("Call switch for:\t");
-      Serial.print(mux);
-      Serial.print(",");
-      Serial.println(bus);
       choose_i2c_bus();
-      Serial.println("switch done");
       for (dev = 0; dev < 3; dev++)
       {
         type = sensor[mux][bus][dev][get_type];
         addr = sensor[mux][bus][dev][get_address];
         colm = (sensor[mux][bus][dev][get_collumn] - 1);
         if (type != EMPTY) {
-          Serial.print("Call init sensor for: MUX=");
-          Serial.print(mux);
-          Serial.print(", BUS=");
-          Serial.print(bus);
-          Serial.print(", type=");
-          Serial.print(type);
-          Serial.print(", addr=0x");
-          Serial.println(addr, HEX);
           init_sensor(type, addr);
         }
         if (colm != NOCOLM) {
@@ -294,38 +281,11 @@ void clean_buffers () {
 
 bool init_sensor (uint8_t itype, uint8_t iaddr)
 {
-  Serial.print("Executing init sensor for: MUX=");
-  Serial.print(mux);
-  Serial.print(", BUS=");
-  Serial.print(bus);
-  Serial.print(", type=");
-  Serial.print(itype);
-  Serial.print(", addr=0x");
-  Serial.println(iaddr, HEX);
   clean_buffers();
   if (itype == SHT2X) {
-    Serial.print("Sensor type is = SHT2X");
-    Serial.print(mux);
-    Serial.print(", BUS=");
-    Serial.print(bus);
-    Serial.print(", type=");
-    Serial.print(itype);
-    Serial.print(", addr=0x");
-    Serial.println(iaddr, HEX);
     Wire.beginTransmission(iaddr);
     Wire.write(SHT2X_RESET);
-    if (Wire.endTransmission(false) != 0) {
-      Serial.print ("[ERROR] During i2c transmission: DATA = ");
-      Serial.print (SHT2X_RESET);
-      Serial.print ("  to addr = 0x");
-      Serial.println (iaddr, HEX);
-    } else {
-      Serial.print ("[SUCCSESS] During i2c transmission: DATA = ");
-      Serial.print (SHT2X_RESET);
-      Serial.print ("  to addr = 0x");
-      Serial.println (iaddr, HEX);
-    }
-
+    Wire.endTransmission();
     delay(SHT_RESET_DURATION);
   }
   if (itype == SHT3X) {
@@ -335,20 +295,7 @@ bool init_sensor (uint8_t itype, uint8_t iaddr)
     for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
       Wire.write(writeBuffer[i]);
     }
-    if (Wire.endTransmission(false) != 0) {
-      Serial.print ("[ERROR] During i2c transmission: DATA = ");
-      Serial.print (SHT3X_CONTROL);
-      Serial.print (SHT3X_RESET);
-      Serial.print ("  to addr = 0x");
-      Serial.println (iaddr, HEX);
-    } else {
-      Serial.print ("[SUCCSESS] During i2c transmission: DATA = ");
-      Serial.print (SHT3X_CONTROL);
-      Serial.print (SHT3X_RESET);
-      Serial.print ("  to addr = 0x");
-      Serial.println (iaddr, HEX);
-    }
-
+    Wire.endTransmission();
     delay(SHT_RESET_DURATION);
     /*
       for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
@@ -367,43 +314,18 @@ bool init_sensor (uint8_t itype, uint8_t iaddr)
     for (int i = 0; i < HDC1X_CONFIG_CMD_SIZE; i++) {
       Wire.write(writeBuffer[i]);
     }
-    if (Wire.endTransmission(false) != 0) {
-      Serial.print ("[ERROR] During i2c transmission: DATA = ");
-      Serial.print (HDC1X_CONFIG);
-      Serial.print (HDC1X_RESET);
-      Serial.print (HDC1X_HRES);
-      Serial.print ("  to addr = 0x");
-      Serial.println (addr, HEX);
-    } else {
-      Serial.print ("[SUCCSESS] During i2c transmission: DATA = ");
-      Serial.print (HDC1X_CONFIG);
-      Serial.print (HDC1X_RESET);
-      Serial.print (HDC1X_HRES);
-      Serial.print ("  to addr = 0x");
-      Serial.println (addr, HEX);
-    }
-
-
+    Wire.endTransmission();
     delay(HDC1X_RESET_DURATION);
-
   }
 }
 
 float get_humidity ()
 {
-  Serial.print("Getting RH for sensor :\t");
-  Serial.print(type);
-  Serial.print(",0x");
-  Serial.println(addr, HEX);
   float xhum = 0;
   uint16_t result = 0;
   uint8_t z = 0;
   clean_buffers();
   if ((type == SHT2X) | (type == SI70XX)) {
-    Serial.print("Getting RH for sensor :\t");
-    Serial.print("SHT2x");
-    Serial.print(",0x");
-    Serial.println(addr, HEX);
     Wire.beginTransmission(addr);
     Wire.write(SHT2X_READ_RH);
     Wire.endTransmission();
@@ -423,18 +345,10 @@ float get_humidity ()
         xhum *= 125;
         xhum /= 65536;
         xhum -= 6;
-        Serial.print("DATA from sensor :\t");
-        Serial.print(result);
-        Serial.print(",");
-        Serial.println(xhum, 2);
       }
     }
   }
   if (type == SHT3X) {
-    Serial.print("Getting RH for sensor :\t");
-    Serial.print("SHT3x");
-    Serial.print(",0x");
-    Serial.println(addr, HEX);
     writeBuffer[0] = SHT3X_CLOCK_STRETCH;
     writeBuffer[1] = SHT3X_HRES_READ;
     Wire.beginTransmission(addr);
@@ -456,18 +370,10 @@ float get_humidity ()
         xhum = (float)result;
         xhum *= 100;
         xhum /= 65535;
-        Serial.print("DATA from sensor :\t");
-        Serial.print(result);
-        Serial.print(",");
-        Serial.println(xhum, 2);
       }
     }
   }
   if (type == HDC1X) {
-    Serial.print("Getting RH for sensor :\t");
-    Serial.print("HDC1X");
-    Serial.print(",0x");
-    Serial.println(addr, HEX);
     Wire.beginTransmission(addr);
     Wire.write(HDC1X_READ_RH);
     Wire.endTransmission();
@@ -486,10 +392,6 @@ float get_humidity ()
         xhum = (float)result;
         xhum *= 100;
         xhum /= 65536;
-        Serial.print("DATA from sensor :\t");
-        Serial.print(result);
-        Serial.print(",");
-        Serial.println(xhum, 2);
       }
     }
   }
@@ -500,16 +402,8 @@ float get_temperature () {
   float xtemp = 0;
   uint16_t result = 0;
   uint8_t z = 0;
-  Serial.print("Getting t for sensor :\t");
-  Serial.print(type);
-  Serial.print(",");
-  Serial.println(addr, HEX);
   clean_buffers();
   if ((type == SHT2X) | (type == SI70XX)) {
-    Serial.print("Getting t for sensor :\t");
-    Serial.print("SHT2x");
-    Serial.print(",0x");
-    Serial.println(addr, HEX);
     Wire.beginTransmission(addr);
     Wire.write(SHT2X_READ_T);
     Wire.endTransmission();
@@ -529,18 +423,12 @@ float get_temperature () {
         xtemp *= 175.72;
         xtemp /= 65536;
         xtemp -= 46.85;
-        Serial.print("DATA from sensor :\t");
-        Serial.print(result);
-        Serial.print(",");
-        Serial.println(xtemp, 2);
+
       }
     }
   }
   if (type == SHT3X) {
-    Serial.print("Getting t for sensor :\t");
-    Serial.print("SHT3x");
-    Serial.print(",0x");
-    Serial.println(addr, HEX);
+
     writeBuffer[0] = SHT3X_CLOCK_STRETCH;
     writeBuffer[1] = SHT3X_HRES_READ;
     Wire.beginTransmission(addr);
@@ -563,18 +451,12 @@ float get_temperature () {
         xtemp *= 175;
         xtemp /= 65535;
         xtemp -= 45;
-        Serial.print("DATA from sensor :\t");
-        Serial.print(result);
-        Serial.print(",");
-        Serial.println(xtemp, 2);
+
       }
     }
   }
   if (type == HDC1X) {
-    Serial.print("Getting t for sensor :\t");
-    Serial.print("HDC1X");
-    Serial.print(",0x");
-    Serial.println(addr, HEX);
+
     Wire.beginTransmission(addr);
     Wire.write(HDC1X_READ_T);
     Wire.endTransmission();
@@ -594,10 +476,6 @@ float get_temperature () {
         xtemp *= 165;
         xtemp /= 65536;
         xtemp -= 40;
-        Serial.print("DATA from sensor :\t");
-        Serial.print(result);
-        Serial.print(",");
-        Serial.println(xtemp, 2);
       }
     }
   }
@@ -622,15 +500,7 @@ void readSensors ()
   {
     for (bus = 0; bus < 8; bus++)
     {
-      Serial.print("Call switch for:\t");
-      Serial.print(mux);
-      Serial.print(",");
-      Serial.println(bus);
       choose_i2c_bus();
-      Serial.print("switch done for:\t");
-      Serial.print(mux);
-      Serial.print(",");
-      Serial.println(bus);
       for (dev = 0; dev < 3; dev++)
       {
         type = sensor[mux][bus][dev][get_type];
@@ -638,15 +508,7 @@ void readSensors ()
         colm = (sensor[mux][bus][dev][get_collumn] - 1);
         hum = 0;
         temp = 0;
-        Serial.print("Current sensor is:\t");
-        Serial.print(type);
-        Serial.print(",");
-        Serial.println(addr, HEX);
         if (type != EMPTY) {
-          Serial.print("Call Read sensors:\t");
-          Serial.print(type);
-          Serial.print(",");
-          Serial.println(addr, HEX);
           hum = get_humidity();
           temp = get_temperature();
         }
@@ -661,7 +523,7 @@ void readSensors ()
             LCD.printNumF (temp, 2, x, y, '.', 5);
           }
           csvline1  += String(hum) + ",";
-          //csvline2  += String(temp) + ",";
+          csvline2  += String(temp) + ",";
         }
       }
     }
@@ -680,17 +542,16 @@ void readSensors ()
     LCD.print("Cannot write RH to file", LEFT, 280);
   }
   // Write to temperatures log file
-  /*
-    logfile2 = SD.open(tFileName, FILE_WRITE );
-    if (logfile2) {
+  logfile2 = SD.open(tFileName, FILE_WRITE );
+  if (logfile2) {
     csvline2 = String(seconds) + "," + csvline2;
     logfile2.println(csvline2);
     LCD.print(csvline2, LEFT, 290);
     logfile2.close();
-    } else {
+  } else {
     LCD.print("Cannot write t to file", LEFT, 290);
-    }
-  */
+  }
+
   delay (800);
 }
 
