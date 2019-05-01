@@ -1,48 +1,12 @@
 #include <SPI.h>
 #include <SD.h>
 #include <UTFT.h>
-#include <DFRobot_I2CMultiplexer.h>
 #include <Wire.h>
-//SHT2x
-#include <Sodaq_SHT2x.h>
-//SHT3x
-#include <SHTSensor.h>
-SHTSensor sht3x(SHTSensor::SHT3X);
-// Adafruit BME680
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME680.h>
-Adafruit_BME680 bme680l0;
-Adafruit_BME680 bme680l1;
-Adafruit_BME680 bme680l5;
-Adafruit_BME680 bme680l6;
-// Adafruit BME280
-#include <Adafruit_BME280.h>
-Adafruit_BME280 bme280l2;
-Adafruit_BME280 bme280l3;
-Adafruit_BME280 bme280l4;
-// DHT12
-#include <DHT12.h>
-DHT12 dht12;
-
 
 // Declare which fonts we will be using
 extern uint8_t SmallFont[];
 extern uint8_t SevenSegNumFont[];
 extern uint8_t BigFont[];
-uint8_t multiplexer[4] = {112, 113, 114, 115};
-// Type of sensor
-const uint8_t SHT2X = 0; /* include SHT20, SHT21, SHT25, HTU21d*/
-const uint8_t SI70XX = 1; /* includes Si7021 */
-const uint8_t HDC10xx = 2; /* includes HDC1080 */
-const uint8_t SHT3X = 3; /* include SHT30, SHT31, SHT35, SHT88*/
-const uint8_t BME280 = 4; /* includes BME280 */
-const uint8_t BME680 = 5; /* includes BME680 */
-const uint8_t DHT1X = 6; /* includes DHT12 */
-const uint8_t DHT2X = 7; /* includes DHT22 */
-
-
-/*Create an I2CMultiplexer object, the address of I2CMultiplexer is 0x70*/
-DFRobot_I2CMultiplexer I2CMultiplexer(multiplexer[0]);
 
 // SCREEN Type and PINs
 UTFT LCD(ILI9486, 38, 39, 40, 41);
@@ -52,22 +16,137 @@ const int SDCARD = 53;
 File logfile1;
 File logfile2;
 
-// Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-String csvheader = "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,";
-// Variables for file rotation 00-99
-#define T_FILE_BASE_NAME "temprt"
-#define RH_FILE_BASE_NAME "humidt"
-const uint8_t T_BASE_NAME_SIZE = sizeof(T_FILE_BASE_NAME) - 1;
-const uint8_t RH_BASE_NAME_SIZE = sizeof(RH_FILE_BASE_NAME) - 1;
-char tFileName[] = T_FILE_BASE_NAME "00.csv";
-char rhFileName[] = RH_FILE_BASE_NAME "00.csv";
+// Screen customiztion
+#define appname "Humidity sensors tester v2.1"
+#define header "SHT2 SHT3 BME+ Si7x HDCx SHT8"
+#define footer "https://wiki.liutyi.info/"
 
+// Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
+//#define csvheader "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,Si7021-1,Si7021-1,Si7021-2,Si7021-2,Si7021-3,Si7021-3,Si7021-4,HTU21d,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080,HDC1080,BME680-2,HDC1080,BME680-2"
+#define csvheader "Time,Sensors"
+
+// Variables for file rotation 00-99
+#define t_base_name "tmprt"
+#define rh_base_name "humdt"
+const uint8_t t_base_name_size = sizeof(t_base_name);
+const uint8_t rh_base_name_size = sizeof(rh_base_name);
+char tFileName[] = t_base_name "000.csv";
+char rhFileName[] = rh_base_name "000.csv";
+
+// Define number and addresses of multiplexers
+uint8_t multiplexer[3] = {112, 113, 114};
+
+// Type of sensor
+#define EMPTY 0 /* slot is empty or sensor disabled */
+#define SHT2X 1 /* include SHT20, SHT21, SHT25, HTU21d*/
+#define SI70XX 2 /* includes Si7021 */
+#define HDC1X 3 /* includes HDC1080 */
+#define SHT3X 4 /* include SHT30, SHT31, SHT35, SHT88*/
+#define BME280 5 /* includes BME280 */
+#define BME680 6 /* includes BME680 */
+#define DHT1X 7 /* includes DHT12 */
+#define DHT2X 8 /* includes DHT22 */
+#define AHT1X 9 /* includes AHT10 */
+
+// indexes name in sensor arrays
+#define get_type 0 /* indexes name in sensor arrays */
+#define get_collumn 1 /* indexes name in sensor arrays */
+#define get_address 2 /* indexes name in sensor arrays */
+#define UNDEF 255 /* sensor have no position on display */
+#define NOCOLM 254 /* do not display this sensor */
+
+// Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address]
+const uint8_t sensor[3][8][3][3] =
+{
+  {
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {DHT1X, 3, 92} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {DHT1X, 3, 92} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {DHT1X, 3, 92} }
+  },
+  {
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+  },
+  {
+    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} }
+  }/*,
+  {
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+  }*/
+};
+// Sensor communication variables
+#define DEFAULT_TIMEOUT 300
+#define SHT2X_CMD_SIZE 2
+#define SHT2X_DATA_SIZE 3
+#define SHT3X_MEASUREMENT_DELAY 15  /* HIGH = 15 MID=6 LOW=4 */
+#define SHT2X_MEASUREMENT_DELAY 10
+#define SHT_RESET_DURATION 20 /* should be 15 */
+#define SHT2X_READ_T 0xE3
+#define SHT2X_READ_RH 0xE5
+#define SHT2X_RESET 0xFE
+
+#define SHT3X_CMD_SIZE 2
+#define SHT3X_DATA_SIZE 6
+#define SHT3X_CLOCK_STRETCH 0x2C
+#define SHT3X_HRES_READ 0x06
+#define SHT3X_CONTROL 0x30
+#define SHT3X_RESET 0xA2
+#define SHT3X_HEATER_OFF 0x66
+#define SHT3X_CLEAR_STATUS 0x41
+
+#define HDC1X_CONFIG_CMD_SIZE 3
+#define HDC1X_DATA_SIZE 4
+#define HDC1X_READ_T 0x00
+#define HDC1X_READ_RH 0x01
+#define HDC1X_CONFIG 0x02 /* MSB */
+#define HDC1X_HRES 0x00
+#define HDC1X_RESET 0x80 /* MSB */
+#define HDC1X_MEASUREMENT_DELAY 20
+#define HDC1X_RESET_DURATION 20
+
+uint8_t readBuffer[6] = {0, 0, 0, 0, 0, 0}; //buffer for read from sensor
+uint8_t writeBuffer[3] = {0, 0, 0};            //variable to devide long i2c command
+uint32_t timeout;
 
 // Other Variables
 int x;
 int y;
-int i2cPort;
-char i;
+uint8_t mux;
+uint8_t bus;
+uint8_t dev;
+uint8_t type;
+uint8_t addr;
+uint8_t colm;
+String csvline1 = "";
+String csvline2 = "";
+long seconds;
+float hum = 0;
+float temp = 0;
 
 void setupSD ()
 {
@@ -85,21 +164,21 @@ void setupSD ()
   } else {
     LCD.print("card initialized.", LEFT, 18);
     while (SD.exists(tFileName)) {
-      if (tFileName[T_BASE_NAME_SIZE + 1] != '9') {
-        tFileName[T_BASE_NAME_SIZE + 1]++;
-      } else if (tFileName[T_BASE_NAME_SIZE] != '9') {
-        tFileName[T_BASE_NAME_SIZE + 1] = '0';
-        tFileName[T_BASE_NAME_SIZE]++;
+      if (tFileName[t_base_name_size + 1] != '9') {
+        tFileName[t_base_name_size + 1]++;
+      } else if (tFileName[t_base_name_size] != '9') {
+        tFileName[t_base_name_size + 1] = '0';
+        tFileName[t_base_name_size]++;
       } else {
         LCD.print("Can't generate temperature file name", LEFT, 36);
         return;
       }
       while (SD.exists(rhFileName)) {
-        if (rhFileName[RH_BASE_NAME_SIZE + 1] != '9') {
-          rhFileName[RH_BASE_NAME_SIZE + 1]++;
-        } else if (rhFileName[RH_BASE_NAME_SIZE] != '9') {
-          rhFileName[RH_BASE_NAME_SIZE + 1] = '0';
-          rhFileName[RH_BASE_NAME_SIZE]++;
+        if (rhFileName[rh_base_name_size + 1] != '9') {
+          rhFileName[rh_base_name_size + 1]++;
+        } else if (rhFileName[rh_base_name_size] != '9') {
+          rhFileName[rh_base_name_size + 1] = '0';
+          rhFileName[rh_base_name_size]++;
         } else {
           LCD.print("Can't generate humidity file name", LEFT, 36);
           return;
@@ -130,16 +209,16 @@ void drawTable ()
   // Header Text (White)
   LCD.setColor(255, 255, 255);
   LCD.setBackColor(80, 80, 80);
-  LCD.print("Humidity sensors tester v2", CENTER, 1);
+  LCD.print(appname, CENTER, 1);
   // Footer Text (Yellow)
   LCD.setBackColor(64, 64, 64);
   LCD.setColor(255, 255, 0);
-  LCD.print("https://wiki.liutyi.info/", CENTER, 307);
+  LCD.print(footer, CENTER, 307);
   // Table title
   LCD.setBackColor(0, 0, 0);
   LCD.setColor(150, 150, 150);
   LCD.setFont(BigFont);
-  LCD.print("SHT2 SHT3 BME+ Si7x HDCx SHT8", CENTER, 18);
+  LCD.print(header, CENTER, 18);
   // Gray Frame
   LCD.setColor(60, 60, 60);
   LCD.drawRect(0, 14, 479, 305);
@@ -155,66 +234,260 @@ void initSensors ()
   LCD.setBackColor(0, 0, 0);
   LCD.setColor(100, 100, 0);
   LCD.setFont(BigFont);
-  sht3x.init();
-  for (uint8_t port = 0; port < 8; port++) {
-    uint8_t* dev = I2CMultiplexer.scan(port);
-    while (*dev) {
-      i2cPort = *dev;
-      // SHT2x
-      if ( i2cPort == 64 ) {
-        i = 0;
-      }
-      // SHT3x
-      if ( i2cPort == 68 ) {
-        i = 1;
-        sht3x.setAccuracy(SHTSensor::SHT_ACCURACY_HIGH);
-      }
-      // BMEx80
-      if ( (i2cPort == 118) || (i2cPort == 119) ) {
-        i = 2;
-        switch (port) {
-          case 0:
-            bme680l0.begin(i2cPort);
-            break;
-          case 1:
-            bme680l1.begin(i2cPort);
-            break;
-          case 2:
-            bme280l2.begin(i2cPort);
-            break;
-          case 3:
-            bme280l3.begin(i2cPort);
-            break;
-          case 4:
-            bme280l4.begin(i2cPort);
-            break;
-          case 5:
-            bme680l5.begin(i2cPort);
-            break;
-          case 6:
-            bme680l6.begin(i2cPort);
-            break;
+  for (mux = 0; mux < sizeof(multiplexer); mux++)
+  {
+    for (bus = 0; bus < 8; bus++)
+    {
+      choose_i2c_bus();
+      for (dev = 0; dev < 3; dev++)
+      {
+        type = sensor[mux][bus][dev][get_type];
+        addr = sensor[mux][bus][dev][get_address];
+        colm = (sensor[mux][bus][dev][get_collumn] - 1);
+        if (type != EMPTY) {
+          init_sensor(type, addr);
+        }
+        if (colm != NOCOLM) {
+          x = 20 + (colm * 80); y = 46 + (28 * bus);
+          LCD.printNumI (addr, x, y);
         }
       }
-      // DHTxx
-      if ( i2cPort == 92 ) {
-        i = 2;
-        dht12.begin();
-      }
-      x = 20 + (i * 80); y = 46 + (28 * port);
-      LCD.printNumI (i2cPort, x, y);
-      dev++;
     }
   }
 }
 
+void choose_i2c_bus() {
+  for (uint8_t i = 0; i < 3; i++) {
+    uint8_t addr = multiplexer[i];
+    Wire.beginTransmission(addr);
+    if ( i == mux ) {
+      Wire.write(1 << bus);
+    } else {
+      Wire.write(0);
+    }
+    Wire.endTransmission();
+    delay (5);
+  }
+}
+
+void clean_buffers () {
+  for (uint8_t i = 0; i < sizeof(readBuffer); i++) {
+    readBuffer[i] = 0;
+  }
+  for (uint8_t i = 0; i < sizeof (writeBuffer); i++) {
+    writeBuffer[i] = 0;
+  }
+}
+
+bool init_sensor (uint8_t itype, uint8_t iaddr)
+{
+  clean_buffers();
+  if (itype == SHT2X) {
+    Wire.beginTransmission(iaddr);
+    Wire.write(SHT2X_RESET);
+    Wire.endTransmission();
+    delay(SHT_RESET_DURATION);
+  }
+  if (itype == SHT3X) {
+    Wire.beginTransmission(iaddr);
+    writeBuffer[0] = SHT3X_CONTROL;
+    writeBuffer[1] = SHT3X_RESET;
+    for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(SHT_RESET_DURATION);
+    /*
+      for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
+      Wire.write(*SHT3X_HEATER_OFF[i]);
+      }
+      for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
+      Wire.write(*SHT3X_CLEAR_STATUS[i]);
+      }
+    */
+  }
+  if (type == HDC1X) {
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = HDC1X_CONFIG;
+    writeBuffer[1] = HDC1X_RESET;
+    writeBuffer[2] = HDC1X_HRES;
+    for (int i = 0; i < HDC1X_CONFIG_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(HDC1X_RESET_DURATION);
+  }
+}
+
+float get_humidity ()
+{
+  float xhum = 0;
+  uint16_t result = 0;
+  uint8_t z = 0;
+  clean_buffers();
+  if ((type == SHT2X) | (type == SI70XX)) {
+    Wire.beginTransmission(addr);
+    Wire.write(SHT2X_READ_RH);
+    Wire.endTransmission();
+    delay(SHT2X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(addr, SHT2X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < SHT2X_DATA_SIZE) {
+        delay(SHT2X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < SHT2X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x0003;
+        xhum = (float)result;
+        xhum *= 125;
+        xhum /= 65536;
+        xhum -= 6;
+      }
+    }
+  }
+  if (type == SHT3X) {
+    writeBuffer[0] = SHT3X_CLOCK_STRETCH;
+    writeBuffer[1] = SHT3X_HRES_READ;
+    Wire.beginTransmission(addr);
+    for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(SHT3X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(addr, SHT3X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if  (Wire.available() < SHT3X_DATA_SIZE) {
+        delay(SHT3X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[3] << 8) + readBuffer[4];
+        xhum = (float)result;
+        xhum *= 100;
+        xhum /= 65535;
+      }
+    }
+  }
+  if (type == HDC1X) {
+    Wire.beginTransmission(addr);
+    Wire.write(HDC1X_READ_RH);
+    Wire.endTransmission();
+    delay(HDC1X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(addr, HDC1X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < HDC1X_DATA_SIZE) {
+        delay(HDC1X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < HDC1X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result =  (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x03;
+        xhum = (float)result;
+        xhum *= 100;
+        xhum /= 65536;
+      }
+    }
+  }
+  return xhum;
+}
+
+float get_temperature () {
+  float xtemp = 0;
+  uint16_t result = 0;
+  uint8_t z = 0;
+  clean_buffers();
+  if ((type == SHT2X) | (type == SI70XX)) {
+    Wire.beginTransmission(addr);
+    Wire.write(SHT2X_READ_T);
+    Wire.endTransmission();
+    delay(SHT2X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(addr, SHT2X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < SHT2X_DATA_SIZE) {
+        delay(SHT2X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < SHT2X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x0003;
+        xtemp = (float)result;
+        xtemp *= 175.72;
+        xtemp /= 65536;
+        xtemp -= 46.85;
+
+      }
+    }
+  }
+  if (type == SHT3X) {
+
+    writeBuffer[0] = SHT3X_CLOCK_STRETCH;
+    writeBuffer[1] = SHT3X_HRES_READ;
+    Wire.beginTransmission(addr);
+    for (int i = 0; i < SHT3X_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(SHT3X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(addr, SHT3X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if  (Wire.available() < SHT3X_DATA_SIZE) {
+        delay(SHT3X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < SHT3X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[0] << 8) + readBuffer[1];
+        xtemp = (float)result;
+        xtemp *= 175;
+        xtemp /= 65535;
+        xtemp -= 45;
+
+      }
+    }
+  }
+  if (type == HDC1X) {
+
+    Wire.beginTransmission(addr);
+    Wire.write(HDC1X_READ_T);
+    Wire.endTransmission();
+    delay(HDC1X_MEASUREMENT_DELAY);
+    z = Wire.requestFrom(addr, HDC1X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < HDC1X_DATA_SIZE) {
+        delay(HDC1X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < HDC1X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result =  (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x03;
+        xtemp = (float)result;
+        xtemp *= 165;
+        xtemp /= 65536;
+        xtemp -= 40;
+      }
+    }
+  }
+  return xtemp;
+}
+
 void readSensors ()
 {
-  float hum = 0;
-  float temp = 0;
-  long seconds;
-  String csvline1 = "";
-  String csvline2 = "";
+  hum = 0;
+  temp = 0;
+  csvline1 = "";
+  csvline2 = "";
 
   //uptime in seconds
   seconds = millis() / 1000;
@@ -223,76 +496,36 @@ void readSensors ()
   LCD.setColor(0, 0, 0);
   LCD.printNumI (seconds, 2, 307);
   LCD.setBackColor(0, 0, 0);
-
-  for (uint8_t port = 0; port < 8; port++) {
-    uint8_t* dev = I2CMultiplexer.scan(port);
-    while (*dev) {
-      i2cPort = *dev;
-      hum = 0;
-      temp = 0;
-      // SHT2x
-      if ( i2cPort == 64 ) {
-        i = 0;
-        hum = SHT2x.GetHumidity();
-        temp = SHT2x.GetTemperature();
-      }
-      // SHT3x
-      if ( i2cPort == 68 ) {
-        i = 1;
-        if (sht3x.readSample()) {
-          hum = sht3x.getHumidity();
-          temp = sht3x.getTemperature();
+  for (mux = 0; mux < sizeof(multiplexer); mux++ )
+  {
+    for (bus = 0; bus < 8; bus++)
+    {
+      choose_i2c_bus();
+      for (dev = 0; dev < 3; dev++)
+      {
+        type = sensor[mux][bus][dev][get_type];
+        addr = sensor[mux][bus][dev][get_address];
+        colm = (sensor[mux][bus][dev][get_collumn] - 1);
+        hum = 0;
+        temp = 0;
+        if (type != EMPTY) {
+          hum = get_humidity();
+          temp = get_temperature();
+        }
+        delay(100);
+        if (type != EMPTY) {
+          if (colm != NOCOLM) {
+            x = 2 + (colm * 80); y = 44 + (28 * bus);
+            LCD.setColor(0, 0, 255);
+            LCD.printNumF (hum, 2, x, y, '.', 5);
+            x = 38 + (colm * 80); y = 12 + 46 + (28 * bus);
+            LCD.setColor(255, 255, 0);
+            LCD.printNumF (temp, 2, x, y, '.', 5);
+          }
+          csvline1  += String(hum) + ",";
+          csvline2  += String(temp) + ",";
         }
       }
-      // BMEx80
-      if ( (i2cPort == 118) || (i2cPort == 119) ) {
-        i = 2;
-        switch (port) {
-          case 0:
-            hum = bme680l0.readHumidity();
-            temp = bme680l0.readTemperature();
-            break;
-          case 1:
-            hum = bme680l1.readHumidity();
-            temp = bme680l1.readTemperature();
-            break;
-          case 2:
-            hum = bme280l2.readHumidity();
-            temp = bme280l2.readTemperature();
-            break;
-          case 3:
-            hum = bme280l3.readHumidity();
-            temp = bme280l3.readTemperature();
-            break;
-          case 4:
-            hum = bme280l4.readHumidity();
-            temp = bme280l4.readTemperature();
-            break;
-          case 5:
-            hum = bme680l5.readHumidity();
-            temp = bme680l5.readTemperature();
-            break;
-          case 6:
-            hum = bme680l6.readHumidity();
-            temp = bme680l6.readTemperature();
-            break;
-        }
-      }
-      // DHTxx
-      if ( i2cPort == 92 ) {
-        i = 2;
-        hum = dht12.readHumidity();
-        temp = dht12.readTemperature();
-      }
-      x = (i * 80); y = 44 + (28 * port);
-      LCD.setColor(0, 0, 255);
-      LCD.printNumF (hum, 2, x, y, '.', 5);
-      x = 38 + (i * 80); y = 12 + 46 + (28 * port);
-      LCD.setColor(255, 255, 0);
-      LCD.printNumF (temp, 2, x, y, '.', 5);
-      csvline1  += String(hum) + ",";
-      csvline2  += String(temp) + ",";
-      dev++;
     }
   }
   Serial.println(csvline1);
@@ -318,38 +551,17 @@ void readSensors ()
   } else {
     LCD.print("Cannot write t to file", LEFT, 290);
   }
+
   delay (800);
 }
 
-void stop_multiplexors()
-{
-  for (uint8_t port = 112; port < 119; port++) {
-    Wire.beginTransmission(port);
-    Wire.write(0);
-    Wire.endTransmission();
-  }
-}
-
-
 void setup()
 {
-  int x;
-  int y;
-  char i;
-  // Setup the LCD
+  Wire.begin();
   LCD.InitLCD();
-  //  LCD.lcdOff();
-  //  LCD.lcdOn();
-  //  LCD.setContrast(64);
-  //  LCD.setBrightness(16);
-  //  LCD.fillScr(90,90,90);
-
   Serial.begin(115200);
   setupSD ();
-  stop_multiplexors();
-  // Clear the screen and draw the frame
   drawTable ();
-  sht3x.init ();
   initSensors ();
   delay(1000);
   drawTable ();
