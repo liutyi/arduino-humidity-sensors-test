@@ -23,7 +23,7 @@ File logfile2;
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
 //#define csvheader "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,Si7021-1,Si7021-1,Si7021-2,Si7021-2,Si7021-3,Si7021-3,Si7021-4,HTU21d,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080,HDC1080,BME680-2,HDC1080,BME680-2"
-#define csvheader "Time,Sensors"
+#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280,BME280,BME280,DHT12,DHT12,DHT12,HTU21d,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HDC1080,HDC1080,HDC1080,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,BME680-2,BME680-2,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
 
 // Variables for file rotation 00-99
 #define t_base_name "tmprt"
@@ -79,8 +79,8 @@ const uint8_t sensor[3][8][3][3] =
     {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
@@ -145,6 +145,7 @@ uint8_t colm;
 String csvline1 = "";
 String csvline2 = "";
 long seconds;
+int freemem;
 float hum = 0;
 float temp = 0;
 
@@ -495,14 +496,15 @@ void readSensors ()
   LCD.setBackColor(64, 64, 64);
   LCD.setColor(0, 0, 0);
   LCD.printNumI (seconds, 2, 307);
+  LCD.printNumI (freemem, 400, 307);
   LCD.setBackColor(0, 0, 0);
   for (mux = 0; mux < sizeof(multiplexer); mux++ )
   {
-    for (bus = 0; bus < 8; bus++)
+    for (dev = 0; dev < 3; dev++)
     {
-      choose_i2c_bus();
-      for (dev = 0; dev < 3; dev++)
+      for (bus = 0; bus < 8; bus++)
       {
+        choose_i2c_bus();
         type = sensor[mux][bus][dev][get_type];
         addr = sensor[mux][bus][dev][get_address];
         colm = (sensor[mux][bus][dev][get_collumn] - 1);
@@ -551,7 +553,6 @@ void readSensors ()
   } else {
     LCD.print("Cannot write t to file", LEFT, 290);
   }
-
   delay (800);
 }
 
