@@ -303,6 +303,7 @@ void choose_i2c_bus() {
     }
     Wire.endTransmission();
   }
+  delay (15);
 }
 
 void clean_buffers () {
@@ -314,7 +315,7 @@ void clean_buffers () {
   }
 }
 
-bool init_sensor (uint8_t itype, uint8_t iaddr)
+void init_sensor (uint8_t itype, uint8_t iaddr)
 {
   clean_buffers();
   if (itype == SHT2X) {
@@ -363,9 +364,8 @@ bool init_sensor (uint8_t itype, uint8_t iaddr)
   }
 }
 
-float get_humidity ()
+void get_humidity ()
 {
-  float xhum = 0;
   uint16_t result = 0;
   uint8_t z = 0;
   clean_buffers();
@@ -385,10 +385,10 @@ float get_humidity ()
         }
         result = (readBuffer[0] << 8) + readBuffer[1];
         result &= ~0x0003;
-        xhum = (float)result;
-        xhum *= 125;
-        xhum /= 65536;
-        xhum -= 6;
+        hum = (float)result;
+        hum *= 125;
+        hum /= 65536;
+        hum -= 6;
       }
     }
   }
@@ -411,9 +411,9 @@ float get_humidity ()
           readBuffer[i] = Wire.read();
         }
         result = (readBuffer[3] << 8) + readBuffer[4];
-        xhum = (float)result;
-        xhum *= 100;
-        xhum /= 65535;
+        hum = (float)result;
+        hum *= 100;
+        hum /= 65535;
       }
     }
   }
@@ -433,9 +433,9 @@ float get_humidity ()
         }
         result =  (readBuffer[0] << 8) + readBuffer[1];
         result &= ~0x03;
-        xhum = (float)result;
-        xhum *= 100;
-        xhum /= 65536;
+        hum = (float)result;
+        hum *= 100;
+        hum /= 65536;
       }
     }
   }
@@ -448,11 +448,9 @@ float get_humidity ()
   if (type == DHT1X ) {
 
   }
-  return xhum;
 }
 
-float get_temperature () {
-  float xtemp = 0;
+void get_temperature () {
   uint16_t result = 0;
   uint8_t z = 0;
   clean_buffers();
@@ -472,10 +470,10 @@ float get_temperature () {
         }
         result = (readBuffer[0] << 8) + readBuffer[1];
         result &= ~0x0003;
-        xtemp = (float)result;
-        xtemp *= 175.72;
-        xtemp /= 65536;
-        xtemp -= 46.85;
+        temp = (float)result;
+        temp *= 175.72;
+        temp /= 65536;
+        temp -= 46.85;
 
       }
     }
@@ -500,10 +498,10 @@ float get_temperature () {
           readBuffer[i] = Wire.read();
         }
         result = (readBuffer[0] << 8) + readBuffer[1];
-        xtemp = (float)result;
-        xtemp *= 175;
-        xtemp /= 65535;
-        xtemp -= 45;
+        temp = (float)result;
+        temp *= 175;
+        temp /= 65535;
+        temp -= 45;
 
       }
     }
@@ -525,10 +523,10 @@ float get_temperature () {
         }
         result =  (readBuffer[0] << 8) + readBuffer[1];
         result &= ~0x03;
-        xtemp = (float)result;
-        xtemp *= 165;
-        xtemp /= 65536;
-        xtemp -= 40;
+        temp = (float)result;
+        temp *= 165;
+        temp /= 65536;
+        temp -= 40;
       }
     }
   }
@@ -541,7 +539,6 @@ float get_temperature () {
   if (type == DHT1X ) {
 
   }
-  return xtemp;
 }
 
 void readSensors ()
@@ -571,8 +568,8 @@ void readSensors ()
         hum = 0;
         temp = 0;
         if (type != EMPTY) {
-          hum = get_humidity();
-          temp = get_temperature();
+          get_humidity();
+          get_temperature();
         }
         delay(100);
         if (type != EMPTY) {
