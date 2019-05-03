@@ -17,13 +17,13 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define appname "Humidity sensors tester v2.1"
+#define appname "Humidity sensors tester v2.7"
 #define header "SHT2 SHT3 BME+ Si7x HDCx SHT8"
 #define footer "https://wiki.liutyi.info/"
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
 //#define csvheader "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,Si7021-1,Si7021-1,Si7021-2,Si7021-2,Si7021-3,Si7021-3,Si7021-4,HTU21d,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080,HDC1080,BME680-2,HDC1080,BME680-2"
-#define csvheader "Time,Sensors"
+#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280,BME280,BME280,DHT12,DHT12,DHT12,HTU21d,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HDC1080,HDC1080,HDC1080,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,BME680-2,BME680-2,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
 
 // Variables for file rotation 00-99
 #define t_base_name "tmprt"
@@ -79,8 +79,8 @@ const uint8_t sensor[3][8][3][3] =
     {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 5, 64}, {BME680, UNDEF, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
@@ -101,7 +101,7 @@ const uint8_t sensor[3][8][3][3] =
 };
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
-#define SHT2X_CMD_SIZE 2
+#define SHT2X_CMD_SIZE 1
 #define SHT2X_DATA_SIZE 3
 #define SHT3X_MEASUREMENT_DELAY 15  /* HIGH = 15 MID=6 LOW=4 */
 #define SHT2X_MEASUREMENT_DELAY 10
@@ -128,6 +128,42 @@ const uint8_t sensor[3][8][3][3] =
 #define HDC1X_RESET 0x80 /* MSB */
 #define HDC1X_MEASUREMENT_DELAY 20
 #define HDC1X_RESET_DURATION 20
+
+#define BME280_CMD_SIZE 1
+#define BME280_CFG_SIZE 2
+#define BME280_DATA_SIZE 2 /* use 16 bit instead of 20 bit for t readings, do not need accuracy more than 0.01 */
+#define BME280_MEASUREMENT_DELAY 10  /* HIGH = 15 MID=6 LOW=4 */
+#define BME280_RESET_DURATION 300 /* should be 15 */
+#define BME280_READ_T 0xFA
+#define BME280_READ_RH 0xFD
+#define BME280_RESET_REGISTER 0xE0
+#define BME280_RESET 0xB6
+#define BME280_CONFIG_REG 0xF5
+#define BME280_CONFIG 0x00 /* 0.5ms standby, filter off, no 3-wire SPI */
+#define BME280_CONTROL_RH_REG 0xF2 /* need to update RH and M register both to apply RH */
+#define BME280_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
+#define BME280_CONTROL_M_REG 0xF4
+#define BME280_CONTROL_M 0x27 /* 001 - t oversampling x1, 001 - p oversampling x1 11 - normal (not sleep) mode */
+#define BME280_7BIT_MASK 0x7F
+
+#define BME680_CMD_SIZE 1
+#define BME680_CFG_SIZE 2
+#define BME680_DATA_SIZE 2 /* use 16 bit instead of 20 bit for t readings, do not need accuracy more than 0.01 */
+#define BME680_MEASUREMENT_DELAY 10  /* HIGH = 15 MID=6 LOW=4 */
+#define BME680_RESET_DURATION 300 /* should be 15 */
+#define BME280_READ_P 0x1F
+#define BME280_READ_T 0x22
+#define BME280_READ_RH 0x25
+#define BME680_RESET_REGISTER 0xE0
+#define BME680_RESET 0xB6
+#define BME680_CONFIG_REG 0x75
+#define BME680_CONFIG 0x00 /* 0.5ms standby, filter off, no 3-wire SPI */
+#define BME680_CONTROL_RH_REG 0x72 /* need to update RH and M register both to apply RH */
+#define BME680_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
+#define BME680_CONTROL_M_REG 0x74
+#define BME680_CONTROL_M 0x24 /* 001 - t oversampling x1, 001 - p oversampling x1 00 - sleep mode */
+
+
 
 uint8_t readBuffer[6] = {0, 0, 0, 0, 0, 0}; //buffer for read from sensor
 uint8_t writeBuffer[3] = {0, 0, 0};            //variable to devide long i2c command
@@ -266,7 +302,6 @@ void choose_i2c_bus() {
       Wire.write(0);
     }
     Wire.endTransmission();
-    delay (5);
   }
 }
 
@@ -313,6 +348,15 @@ bool init_sensor (uint8_t itype, uint8_t iaddr)
     writeBuffer[2] = HDC1X_HRES;
     for (int i = 0; i < HDC1X_CONFIG_CMD_SIZE; i++) {
       Wire.write(writeBuffer[i]);
+    }
+    if (type == BME280 ) {
+
+    }
+    if (type == BME680 ) {
+
+    }
+    if (type == DHT1X ) {
+
     }
     Wire.endTransmission();
     delay(HDC1X_RESET_DURATION);
@@ -394,6 +438,15 @@ float get_humidity ()
         xhum /= 65536;
       }
     }
+  }
+  if (type == BME280 ) {
+
+  }
+  if (type == BME680 ) {
+
+  }
+  if (type == DHT1X ) {
+
   }
   return xhum;
 }
@@ -479,6 +532,15 @@ float get_temperature () {
       }
     }
   }
+  if (type == BME280 ) {
+
+  }
+  if (type == BME680 ) {
+
+  }
+  if (type == DHT1X ) {
+
+  }
   return xtemp;
 }
 
@@ -498,11 +560,11 @@ void readSensors ()
   LCD.setBackColor(0, 0, 0);
   for (mux = 0; mux < sizeof(multiplexer); mux++ )
   {
-    for (bus = 0; bus < 8; bus++)
+    for (dev = 0; dev < 3; dev++)
     {
-      choose_i2c_bus();
-      for (dev = 0; dev < 3; dev++)
+      for (bus = 0; bus < 8; bus++)
       {
+        choose_i2c_bus();
         type = sensor[mux][bus][dev][get_type];
         addr = sensor[mux][bus][dev][get_address];
         colm = (sensor[mux][bus][dev][get_collumn] - 1);
@@ -551,7 +613,6 @@ void readSensors ()
   } else {
     LCD.print("Cannot write t to file", LEFT, 290);
   }
-
   delay (800);
 }
 
