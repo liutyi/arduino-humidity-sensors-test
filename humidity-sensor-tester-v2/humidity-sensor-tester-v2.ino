@@ -145,15 +145,22 @@ const uint8_t sensor[3][8][3][3] =
 #define BME280_CONTROL_M_REG 0xF4
 #define BME280_CONTROL_M 0x27 /* 001 - t oversampling x1, 001 - p oversampling x1 11 - normal (not sleep) mode */
 #define BME280_7BIT_MASK 0x7F
+#define BME280_COEFF1_ADDR 0x88
+#define BME280_COEFF2_ADDR 0xE1
+#define BME280_COEFF3_ADDR 0xA1
+#define BME280_COEFF1_SIZE 6
+#define BME280_COEFF2_SIZE 6
+#define BME280_COEFF3_SIZE 1
 
 #define BME680_CMD_SIZE 1
 #define BME680_CFG_SIZE 2
 #define BME680_DATA_SIZE 2 /* use 16 bit instead of 20 bit for t readings, do not need accuracy more than 0.01 */
 #define BME680_MEASUREMENT_DELAY 10  /* HIGH = 15 MID=6 LOW=4 */
-#define BME680_RESET_DURATION 300 /* should be 15 */
-#define BME280_READ_P 0x1F
-#define BME280_READ_T 0x22
-#define BME280_READ_RH 0x25
+#define BME680_RESET_DURATION 15 /* should be 15 */
+#define BME680_READ_ALL 0x1D
+#define BME680_READ_ALL_SIZE 15
+#define BME680_READ_T 0x22
+#define BME680_READ_RH 0x25
 #define BME680_RESET_REGISTER 0xE0
 #define BME680_RESET 0xB6
 #define BME680_CONFIG_REG 0x75
@@ -161,12 +168,36 @@ const uint8_t sensor[3][8][3][3] =
 #define BME680_CONTROL_RH_REG 0x72 /* need to update RH and M register both to apply RH */
 #define BME680_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
 #define BME680_CONTROL_M_REG 0x74
-#define BME680_CONTROL_M 0x24 /* 001 - t oversampling x1, 001 - p oversampling x1 00 - sleep mode */
+#define BME680_CONTROL_M 0x20 /* 001 - t oversampling x1, 000 - p disabled (oversampling x0) 00 - sleep mode */
+#define BME680_CONTROL_M_ON 0x21
+//#define BME680_CONTROL_M 0x24 /* 001 - t oversampling x1, 000 - p disabled (oversampling x0) 00 - sleep mode */
+//#define BME680_CONTROL_M_ON 0x25
+#define BME680_CONTROL_GH_REG 0x70
+#define BME680_CONTROL_GH 0x0 /*Gas heater off*/
+#define BME680_COEFF1_ADDR 0x89
+#define BME680_COEFF2_ADDR 0xE1
+#define BME680_COEFF1_SIZE 4
+#define BME680_COEFF2_SIZE 16
 
+//COEF1
+#define BME680_T2_LSB 1
+#define BME680_T2_MSB 2
+#define BME680_T3 3
+//COEF2
+#define BME680_H2_MSB 0
+#define BME680_H2_LSB 1
+#define BME680_H1_LSB 1
+#define BME680_H1_MSB 2
+#define BME680_H3   3
+#define BME680_H4   4
+#define BME680_H5   5
+#define BME680_H6   6
+#define BME680_H7   7
+#define BME680_T1_LSB 8
+#define BME680_T1_MSB 9
 
-
-uint8_t readBuffer[6] = {0, 0, 0, 0, 0, 0}; //buffer for read from sensor
-uint8_t writeBuffer[3] = {0, 0, 0};            //variable to devide long i2c command
+uint8_t readBuffer[17] = {0}; //buffer for read from sensor
+uint8_t writeBuffer[3] = {0}; //variable to devide long i2c command
 uint32_t timeout;
 
 // Other Variables
@@ -183,6 +214,7 @@ String csvline2 = "";
 long seconds;
 float hum = 0;
 float temp = 0;
+uint32_t temp_comp;
 
 void setupSD ()
 {
@@ -354,7 +386,35 @@ void init_sensor (uint8_t itype, uint8_t iaddr)
 
     }
     if (type == BME680 ) {
-
+      Wire.beginTransmission(addr);
+      writeBuffer[0] = BME680_RESET_REGISTER;
+      writeBuffer[1] = BME680_RESET;
+      for (int i = 0; i < BME680_CFG_SIZE; i++) {
+        Wire.write(writeBuffer[i]);
+      }
+      Wire.endTransmission();
+      delay(BME680_RESET_DURATION);
+      Wire.beginTransmission(addr);
+      writeBuffer[0] = BME680_CONTROL_GH_REG;
+      writeBuffer[1] = BME680_CONTROL_GH;
+      for (int i = 0; i < BME680_CFG_SIZE; i++) {
+        Wire.write(writeBuffer[i]);
+      }
+      Wire.endTransmission();
+      Wire.beginTransmission(addr);
+      writeBuffer[0] = BME680_CONTROL_RH_REG;
+      writeBuffer[1] = BME680_CONTROL_RH;
+      for (int i = 0; i < BME680_CFG_SIZE; i++) {
+        Wire.write(writeBuffer[i]);
+      }
+      Wire.endTransmission();
+      Wire.beginTransmission(addr);
+      writeBuffer[0] = BME680_CONTROL_M_REG;
+      writeBuffer[1] = BME680_CONTROL_M;
+      for (int i = 0; i < BME680_CFG_SIZE; i++) {
+        Wire.write(writeBuffer[i]);
+      }
+      Wire.endTransmission();
     }
     if (type == DHT1X ) {
 
@@ -374,7 +434,7 @@ void get_humidity ()
     Wire.write(SHT2X_READ_RH);
     Wire.endTransmission();
     delay(SHT2X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT2X_DATA_SIZE);
+    z = Wire.requestFrom((uint8_t)addr, (uint8_t)SHT2X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < SHT2X_DATA_SIZE) {
@@ -401,7 +461,7 @@ void get_humidity ()
     }
     Wire.endTransmission();
     delay(SHT3X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT3X_DATA_SIZE);
+    z = Wire.requestFrom((uint8_t)addr, (uint8_t)SHT3X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if  (Wire.available() < SHT3X_DATA_SIZE) {
@@ -422,7 +482,7 @@ void get_humidity ()
     Wire.write(HDC1X_READ_RH);
     Wire.endTransmission();
     delay(HDC1X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, HDC1X_DATA_SIZE);
+    z = Wire.requestFrom((uint8_t)addr, (uint8_t)HDC1X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < HDC1X_DATA_SIZE) {
@@ -439,11 +499,102 @@ void get_humidity ()
       }
     }
   }
+
   if (type == BME280 ) {
 
   }
   if (type == BME680 ) {
+    uint16_t h1, h2, result;
+    int8_t h3, h4, h5, h7 = 1;
+    uint8_t h6 = 1;
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    Wire.write(BME680_COEFF2_ADDR);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME680_COEFF2_SIZE);
+    timeout = millis() + (DEFAULT_TIMEOUT / 2);
+    while ( millis() < timeout) {
+      if (Wire.available() < BME680_COEFF2_SIZE) {
+        delay(BME680_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME680_COEFF2_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        h1 = (uint16_t) (((uint16_t) readBuffer[BME680_H1_MSB] << 4) | ((uint16_t)(readBuffer[BME680_H1_LSB]) & 0x0F));
+        h2 = (uint16_t) (((uint16_t) readBuffer[BME680_H2_MSB] << 4) | ((uint16_t)(readBuffer[BME680_H2_LSB]) >> 4));
+        h3 = (int8_t) readBuffer[BME680_H3];
+        h4 = (int8_t) readBuffer[BME680_H4];
+        h5 = (int8_t) readBuffer[BME680_H5];
+        h6 = (uint8_t) readBuffer[BME680_H6];
+        h7 = (int8_t) readBuffer[BME680_H7];
 
+        Serial.print ("H1 = ");
+        Serial.println (h1);
+        Serial.print ("H2 = ");
+        Serial.println (h2);
+        Serial.print ("H3 = ");
+        Serial.println (h3);
+        Serial.print ("H4 = ");
+        Serial.println (h4);
+        Serial.print ("H5 = ");
+        Serial.println (h5);
+        Serial.print ("H6 = ");
+        Serial.println (h6);
+        Serial.print ("H7 = ");
+        Serial.println (h7);
+      }
+    }
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = BME680_CONTROL_M_REG;
+    writeBuffer[1] = BME680_CONTROL_M_ON;
+    for (int i = 0; i < BME680_CFG_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    Wire.beginTransmission(addr);
+    Wire.write(BME680_READ_ALL);
+    Wire.endTransmission();
+    delay(BME680_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME680_READ_ALL_SIZE);
+
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < BME680_READ_ALL_SIZE) {
+        delay(BME680_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < BME680_READ_ALL_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        Serial.println("RH");
+        result =  (uint16_t) (((uint32_t) readBuffer[8] * 256) | (uint32_t) readBuffer[9]);
+        Serial.print ("result = ");
+        Serial.println (result);
+        int32_t var1, var2, var3, var4, var5, var6, temp_scaled, calc_hum;
+        temp_scaled =  (((int32_t) temp_comp * 5) + 128) >> 8;
+        var1 = (int32_t) (result - ((int32_t) ((int32_t) h1 * 16)))
+               - (((temp_scaled * (int32_t) h3) / ((int32_t) 100)) >> 1);
+        var2 = ((int32_t) h2
+                * (((temp_scaled * (int32_t) h4) / ((int32_t) 100))
+                   + (((temp_scaled * ((temp_scaled * (int32_t) h5) / ((int32_t) 100))) >> 6)
+                      / ((int32_t) 100)) + (int32_t) (1 << 14))) >> 10;
+        var3 = var1 * var2;
+        var4 = (int32_t) h6 << 7;
+        var4 = ((var4) + ((temp_scaled * (int32_t) h7) / ((int32_t) 100))) >> 4;
+        var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
+        var6 = (var4 * var5) >> 1;
+        calc_hum = (((var3 + var6) >> 10) * ((int32_t) 1000)) >> 12;
+        Serial.print ("calc_hum = ");
+        Serial.println (calc_hum);
+        /* if (calc_hum > 100000)
+          calc_hum = 100000;
+          else if (calc_hum < 0)
+          calc_hum = 0; */
+        hum = (float)calc_hum;
+        hum /= 1000;
+
+      }
+    }
   }
   if (type == DHT1X ) {
 
@@ -459,7 +610,7 @@ void get_temperature () {
     Wire.write(SHT2X_READ_T);
     Wire.endTransmission();
     delay(SHT2X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT2X_DATA_SIZE);
+    z = Wire.requestFrom((uint8_t)addr, (uint8_t)SHT2X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < SHT2X_DATA_SIZE) {
@@ -488,7 +639,7 @@ void get_temperature () {
     }
     Wire.endTransmission();
     delay(SHT3X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, SHT3X_DATA_SIZE);
+    z = Wire.requestFrom((uint8_t)addr, (uint8_t)SHT3X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if  (Wire.available() < SHT3X_DATA_SIZE) {
@@ -512,7 +663,7 @@ void get_temperature () {
     Wire.write(HDC1X_READ_T);
     Wire.endTransmission();
     delay(HDC1X_MEASUREMENT_DELAY);
-    z = Wire.requestFrom(addr, HDC1X_DATA_SIZE);
+    z = Wire.requestFrom((uint8_t)addr, (uint8_t)HDC1X_DATA_SIZE);
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < HDC1X_DATA_SIZE) {
@@ -534,7 +685,98 @@ void get_temperature () {
 
   }
   if (type == BME680 ) {
+    uint16_t t1;
+    int16_t t2;
+    int8_t t3;
+    uint32_t xresult = 0;
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    Wire.write(BME680_COEFF1_ADDR);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME680_COEFF1_SIZE);
+    Serial.print("\tI2C $"); Serial.print(BME680_COEFF1_ADDR, HEX); Serial.print(" => ");
+    timeout = millis() + (DEFAULT_TIMEOUT / 2);
+    while ( millis() < timeout) {
+      if (Wire.available() < (BME680_COEFF1_SIZE)) {
+        delay(BME680_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME680_COEFF1_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+          Serial.print("0x"); Serial.print(readBuffer[i], HEX); Serial.print(", ");
+        }
+        Serial.println("");
+        t2 = (int16_t)(((uint16_t)readBuffer[BME680_T2_MSB] << 8) | (uint16_t)readBuffer[BME680_T2_LSB]);
+        t3 = readBuffer[BME680_T3];
+        Serial.print ("T2 = ");
+        Serial.println (t2);
+        Serial.print ("T3 = ");
+        Serial.println (t3);
+      }
+    }
+    Wire.beginTransmission(addr);
+    Wire.write(BME680_COEFF2_ADDR);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME680_COEFF2_SIZE);
+    Serial.print("\tI2C $"); Serial.print(BME680_COEFF2_ADDR, HEX); Serial.print(" => ");
+    timeout = millis() + (DEFAULT_TIMEOUT / 2);
+    while ( millis() < timeout) {
+      if (Wire.available() < BME680_COEFF2_SIZE) {
+        delay(BME680_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME680_COEFF2_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+          Serial.print("0x"); Serial.print(readBuffer[i], HEX); Serial.print(", ");
+        }
+        t1 = (((uint16_t)readBuffer[BME680_T1_MSB] << 8) | (uint16_t)readBuffer[BME680_T1_LSB]);
+        Serial.print ("T1 = ");
+        Serial.println (t1);
+      }
+    }
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = BME680_CONTROL_M_REG;
+    writeBuffer[1] = BME680_CONTROL_M_ON;
+    for (int i = 0; i < BME680_CFG_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    Wire.beginTransmission(addr);
+    Wire.write(BME680_READ_ALL);
+    Wire.endTransmission();
+    delay(BME680_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME680_READ_ALL_SIZE);
+    Serial.print("\tI2C $"); Serial.print(BME680_READ_ALL, HEX); Serial.print(" => ");
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < BME680_READ_ALL_SIZE) {
+        delay(BME680_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < BME680_READ_ALL_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+          Serial.print("0x"); Serial.print(readBuffer[i], HEX); Serial.print(", ");
+        }
+        Serial.println("");
+        //result =  (uint32_t) (((uint32_t) readBuffer[0] * 4096) | ((uint32_t) readBuffer[6] * 1));
+        xresult =  (uint32_t) (((uint32_t) readBuffer[5] * 4096)      | ((uint32_t) readBuffer[6] * 16)    | ((uint32_t) readBuffer[7] / 16));
+        Serial.print ("result = ");
+        Serial.println (xresult);
+        int64_t var1, var2, var3 ;
+        int16_t calc_temp;
+        var1 = ((int32_t) xresult >> 3) - ((int32_t) t1 << 1);
+        var2 = (var1 * (int32_t) t2) >> 11;
+        var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
+        var3 = ((var3) * ((int32_t) t3 << 4)) >> 14;
+        temp_comp  = (int32_t) (var2 + var3);
+        calc_temp = (int16_t) ((( temp_comp * 5) + 128) >> 8);
+        Serial.print ("temp_comp = ");
+        Serial.println (temp_comp);
+        Serial.print ("calc_temp = ");
+        Serial.println (calc_temp);
+        temp = (float)calc_temp;
+        temp /= 100;
 
+      }
+    }
   }
   if (type == DHT1X ) {
 
@@ -568,8 +810,8 @@ void readSensors ()
         hum = 0;
         temp = 0;
         if (type != EMPTY) {
-          get_humidity();
           get_temperature();
+          get_humidity();
         }
         delay(100);
         if (type != EMPTY) {
