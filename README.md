@@ -25,3 +25,21 @@ Xreef DHT12 https://github.com/xreef/DHT12_sensor_library
 Version 2.1
 
 UTFT https://wiki.liutyi.info/display/ARDUINO/MAR3513+libraries
+
+# Sensors
+
+https://www.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/0_Datasheets/Humidity/Sensirion_Humidity_Sensors_SHT85_Datasheet.pdf
+
+https://www.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/0_Datasheets/Humidity/Sensirion_Humidity_Sensors_SHT3x_Datasheet_digital.pdf
+
+https://www.sensirion.com/fileadmin/user_upload/customers/sensirion/Dokumente/0_Datasheets/Humidity/Sensirion_Humidity_Sensors_SHT21_Datasheet.pdf
+
+https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BME680-DS001.pdf
+
+https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BME280-DS002.pdf
+
+https://www.silabs.com/documents/public/data-sheets/Si7021-A20.pdf
+
+http://www.ti.com/lit/ds/symlink/hdc1080.pdf
+
+
