@@ -135,12 +135,13 @@ const uint8_t sensor[3][8][3][3] =
 #define HDC1X_CONFIG 0x02 /* MSB */
 #define HDC1X_HRES 0x00
 #define HDC1X_RESET 0x80 /* MSB */
-#define HDC1X_MEASUREMENT_DELAY 10 /* t 6.35 -14 bit 3.65 - 11bit; RH 14bit - 6.50, 11 bit - 3.85, 8bit - 2.50 */
+#define HDC1X_MEASUREMENT_DELAY 15 /* t 6.35 -14 bit 3.65 - 11bit; RH 14bit - 6.50, 11 bit - 3.85, 8bit - 2.50 */
 #define HDC1X_RESET_DURATION 15 /*After power-up, the sensor needs at most 15 ms, to be ready*/
 
 #define BME280_CMD_SIZE 1
 #define BME280_CFG_SIZE 2
-#define BME280_DATA_SIZE 2 /* use 16 bit instead of 20 bit for t readings, do not need accuracy more than 0.01 */
+#define BME280_DATA_SIZE 2
+#define BME280_T_DATA_SIZE 3
 #define BME280_MEASUREMENT_DELAY 10  /* HIGH = 15 MID=6 LOW=4 */
 #define BME280_RESET_DURATION 300 /* should be 15 */
 #define BME280_READ_T 0xFA
@@ -158,8 +159,27 @@ const uint8_t sensor[3][8][3][3] =
 #define BME280_COEFF2_ADDR 0xE1
 #define BME280_COEFF3_ADDR 0xA1
 #define BME280_COEFF1_SIZE 6
-#define BME280_COEFF2_SIZE 6
+#define BME280_COEFF2_SIZE 7
 #define BME280_COEFF3_SIZE 1
+
+//COEF1
+#define BME280_T1_LSB 0
+#define BME280_T1_MSB 1
+#define BME280_T2_LSB 2
+#define BME280_T2_MSB 3
+#define BME280_T3_LSB 4
+#define BME280_T3_MSB 5
+//COEF2
+#define BME280_H2_LSB 0
+#define BME280_H2_MSB 1
+#define BME280_H3   2
+#define BME280_H4_MSB 3
+#define BME280_H4_LSB 4
+#define BME280_H5_LSB 4
+#define BME280_H5_MSB 5
+#define BME280_H6   6
+//COEF3
+#define BME280_H1 0
 
 #define BME680_CMD_SIZE 1
 #define BME680_CFG_SIZE 2
@@ -223,6 +243,7 @@ long seconds;
 float hum = 0;
 float temp = 0;
 uint32_t temp_comp;
+int32_t temp_comp_280;
 
 void setupSD ()
 {
@@ -394,7 +415,28 @@ void init_sensor (uint8_t itype, uint8_t iaddr)
     //delay(HDC1X_RESET_DURATION); /* since there is no other configuration, skip delay */
   }
   if (type == BME280 ) {
-
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = BME280_RESET_REGISTER;
+    writeBuffer[1] = BME280_RESET;
+    for (int i = 0; i < BME280_CFG_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(BME280_RESET_DURATION);
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = BME280_CONTROL_RH_REG;
+    writeBuffer[1] = BME280_CONTROL_RH;
+    for (int i = 0; i < BME280_CFG_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = BME280_CONTROL_M_REG;
+    writeBuffer[1] = BME280_CONTROL_M;
+    for (int i = 0; i < BME280_CFG_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
   }
   if (type == BME680 ) {
     Wire.beginTransmission(addr);
@@ -507,9 +549,76 @@ void get_humidity ()
       }
     }
   }
-
   if (type == BME280 ) {
+    uint8_t h1, h3;
+    int16_t h2, h4, h5, result;
+    int8_t h6;
+    uint32_t xresult;
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    Wire.write(BME280_COEFF3_ADDR);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME280_COEFF3_SIZE);
+    timeout = millis() + (DEFAULT_TIMEOUT / 2);
+    while ( millis() < timeout) {
+      if (Wire.available() < BME280_COEFF3_SIZE) {
+        delay(BME280_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME280_COEFF3_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        h1 = (uint8_t) readBuffer[BME280_H1];
+      }
+    }
+    Wire.beginTransmission(addr);
+    Wire.write(BME280_COEFF2_ADDR);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME280_COEFF2_SIZE);
+    timeout = millis() + (DEFAULT_TIMEOUT / 2);
+    while ( millis() < timeout) {
+      if (Wire.available() < BME280_COEFF2_SIZE) {
+        delay(BME280_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME280_COEFF2_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        h2 = (uint16_t) (((uint16_t) readBuffer[BME280_H2_MSB] << 8) | (uint16_t)(readBuffer[BME280_H2_LSB]));
+        h3 = (uint8_t) readBuffer[BME280_H3];
+        h4 = (int16_t) (((uint16_t) readBuffer[BME280_H4_MSB] << 4) | ((uint16_t)(readBuffer[BME280_H4_LSB]) & 0x0F));
+        h5 = (int16_t) (((uint16_t) readBuffer[BME280_H5_MSB] << 4) | ((uint16_t)(readBuffer[BME280_H5_LSB]) >> 4));
+        h6 = (int8_t) readBuffer[BME280_H6];
+      }
+    }
+    clean_buffers();
+    Wire.endTransmission();
+    Wire.beginTransmission(addr);
+    Wire.write(BME280_READ_RH);
+    Wire.endTransmission();
+    delay(BME280_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME280_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < BME280_DATA_SIZE) {
+        delay(BME280_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME280_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        xresult = (uint16_t)((readBuffer[0] << 8) | readBuffer[1]);
+        int32_t var32;
+        var32 = (temp_comp_280 - ((int32_t)76800));
+        var32 = (((((xresult << 14) - (((int32_t)h4) << 20) -
+                    (((int32_t)h5) * var32)) + ((int32_t)16384)) >> 15) *
+                 (((((((var32 * ((int32_t)h6)) >> 10) *
+                      (((var32 * ((int32_t)h3)) >> 11) + ((int32_t)32768))) >> 10) +
+                    ((int32_t)2097152)) * ((int32_t)h2) + 8192) >> 14));
+        var32 = (var32 - (((((var32 >> 15) * (var32 >> 15)) >> 7) *
+                           ((int32_t)h1)) >> 4));
+        hum = (float)(var32  >> 12);
+        hum /= 1024;
 
+      }
+    }
   }
   if (type == BME680 ) {
     uint16_t h1, h2, result;
@@ -669,7 +778,58 @@ void get_temperature () {
     }
   }
   if (type == BME280 ) {
+    uint16_t t1;
+    int16_t t2, t3;
+    uint32_t result = 0;
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    Wire.write(BME280_COEFF1_ADDR);
+    Wire.endTransmission();
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME280_COEFF1_SIZE);
+    timeout = millis() + (DEFAULT_TIMEOUT / 2);
+    while ( millis() < timeout) {
+      if (Wire.available() < (BME280_COEFF1_SIZE)) {
+        delay(BME280_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < BME280_COEFF1_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+ 
+        }
+        t1 = (uint16_t) (((uint16_t)readBuffer[BME280_T1_MSB] << 8) | (uint16_t)readBuffer[BME280_T1_LSB]);
+        t2 = (int16_t)(((uint16_t)readBuffer[BME280_T2_MSB] << 8) | (uint16_t)readBuffer[BME280_T2_LSB]);
+        t3 = (int16_t)(((uint16_t)readBuffer[BME280_T3_MSB] << 8) | (uint16_t)readBuffer[BME280_T3_LSB]);
+      }
+    }
+    clean_buffers();
+    Wire.beginTransmission(addr);
+    Wire.write(BME280_READ_T);
+    Wire.endTransmission();
+    delay(BME280_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)BME280_T_DATA_SIZE);
 
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < BME280_T_DATA_SIZE) {
+        delay(BME280_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < BME280_T_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+
+        }
+
+        result = (uint32_t) (((uint32_t) readBuffer[0] << 16) | ((uint32_t) readBuffer[1] << 8) | ((uint32_t) readBuffer[2]));
+
+        int32_t var1, var2;
+        int16_t calc_temp;
+        result >>= 4;
+        var1 = ((((result >> 3) - ((int32_t)t1 << 1))) * ((int32_t)t2)) >> 11;
+        var2 = (((((result >> 4) - ((int32_t)t1)) * ((result >> 4) - ((int32_t)t1))) >> 12) * ((int32_t)t3)) >> 14;
+        temp_comp_280 = var1 + var2;
+        temp = (temp_comp_280 * 5 + 128) >> 8;
+        temp /= 100;
+
+      }
+    }
   }
   if (type == BME680 ) {
     uint16_t t1;
