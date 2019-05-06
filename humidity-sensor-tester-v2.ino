@@ -138,6 +138,12 @@ const uint8_t sensor[3][8][3][3] =
 #define HDC1X_MEASUREMENT_DELAY 15 /* t 6.35 -14 bit 3.65 - 11bit; RH 14bit - 6.50, 11 bit - 3.85, 8bit - 2.50 */
 #define HDC1X_RESET_DURATION 15 /*After power-up, the sensor needs at most 15 ms, to be ready*/
 
+#define DHT12_CONFIG_CMD_SIZE 3
+#define DHT12_DATA_SIZE 2
+#define DHT12_READ_T 0x02
+#define DHT12_READ_RH 0x00
+#define DHT12_MEASUREMENT_DELAY 15
+
 #define BME280_CMD_SIZE 1
 #define BME280_CFG_SIZE 2
 #define BME280_DATA_SIZE 2
@@ -470,7 +476,7 @@ void init_sensor (uint8_t itype, uint8_t iaddr)
     Wire.endTransmission();
   }
   if (type == DHT1X ) {
-
+    //do nothing
   }
 }
 
@@ -694,7 +700,22 @@ void get_humidity ()
     }
   }
   if (type == DHT1X ) {
-
+    Wire.beginTransmission(addr);
+    Wire.write(DHT12_READ_RH);
+    Wire.endTransmission();
+    delay(DHT12_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)DHT12_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < DHT12_DATA_SIZE) {
+        delay(DHT12_MEASUREMENT_DELAY / 2);
+      } else {
+        for (int i = 0; i < DHT12_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        hum = (readBuffer[0] + (float) readBuffer[1] / 10);
+      }
+    }
   }
 }
 
@@ -793,7 +814,7 @@ void get_temperature () {
       } else {
         for (int i = 0; i < BME280_COEFF1_SIZE; i++) {
           readBuffer[i] = Wire.read();
- 
+
         }
         t1 = (uint16_t) (((uint16_t)readBuffer[BME280_T1_MSB] << 8) | (uint16_t)readBuffer[BME280_T1_LSB]);
         t2 = (int16_t)(((uint16_t)readBuffer[BME280_T2_MSB] << 8) | (uint16_t)readBuffer[BME280_T2_LSB]);
@@ -905,7 +926,26 @@ void get_temperature () {
     }
   }
   if (type == DHT1X ) {
-
+    Wire.beginTransmission(addr);
+    Wire.write(DHT12_READ_T);
+    Wire.endTransmission();
+    delay(DHT12_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)DHT12_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < DHT12_DATA_SIZE) {
+        delay(DHT12_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < DHT12_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        uint8_t minor = readBuffer[1] & 0x7F;
+        uint8_t sign  = readBuffer[1] & 0x80;
+        temp = (readBuffer[0] + (float) minor / 10);
+        if (sign)  // negative temperature
+          temp = -temp;
+      }
+    }
   }
 }
 
