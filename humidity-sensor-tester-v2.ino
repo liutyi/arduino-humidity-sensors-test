@@ -21,7 +21,7 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define appname "Humidity sensors tester v2.8"
+#define appname "Humidity sensors tester v2.9"
 #define header "SHT2 SHT3 BME+ Si7x HDCx SHT8"
 #define footer "https://wiki.liutyi.info/"
 
@@ -45,12 +45,13 @@ uint8_t multiplexer[3] = {112, 113, 114};
 #define SHT2X 1 /* include SHT20, SHT21, SHT25, HTU21d*/
 #define SI70XX 2 /* includes Si7021 */
 #define HDC1X 3 /* includes HDC1080 */
-#define SHT3X 4 /* include SHT30, SHT31, SHT35, SHT88*/
+#define SHT3X 4 /* include SHT30, SHT31, SHT35*/
 #define BME280 5 /* includes BME280 */
 #define BME680 6 /* includes BME680 */
 #define DHT1X 7 /* includes DHT12 */
 #define DHT2X 8 /* includes DHT22 */
 #define AHT1X 9 /* includes AHT10 */
+#define SHT8X 10 /* includes SHT85 */
 
 // indexes name in sensor arrays
 #define get_type 0 /* indexes name in sensor arrays */
@@ -86,9 +87,9 @@ const uint8_t sensor[3][8][3][3] =
     {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} }
   }/*,
@@ -142,13 +143,13 @@ const uint8_t sensor[3][8][3][3] =
 #define DHT12_DATA_SIZE 2
 #define DHT12_READ_T 0x02
 #define DHT12_READ_RH 0x00
-#define DHT12_MEASUREMENT_DELAY 15
+#define DHT12_MEASUREMENT_DELAY 50
 
 #define BME280_CMD_SIZE 1
 #define BME280_CFG_SIZE 2
 #define BME280_DATA_SIZE 2
 #define BME280_T_DATA_SIZE 3
-#define BME280_MEASUREMENT_DELAY 10  /* HIGH = 15 MID=6 LOW=4 */
+#define BME280_MEASUREMENT_DELAY 20  /* HIGH = 15 MID=6 LOW=4 */
 #define BME280_RESET_DURATION 300 /* should be 15 */
 #define BME280_READ_T 0xFA
 #define BME280_READ_RH 0xFD
@@ -157,9 +158,13 @@ const uint8_t sensor[3][8][3][3] =
 #define BME280_CONFIG_REG 0xF5
 #define BME280_CONFIG 0x00 /* 0.5ms standby, filter off, no 3-wire SPI */
 #define BME280_CONTROL_RH_REG 0xF2 /* need to update RH and M register both to apply RH */
-#define BME280_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
+//#define BME280_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
+#define BME280_CONTROL_RH 0x05 /* 101 - RH oversampling x16 */
+
 #define BME280_CONTROL_M_REG 0xF4
-#define BME280_CONTROL_M 0x27 /* 001 - t oversampling x1, 001 - p oversampling x1 11 - normal (not sleep) mode */
+//#define BME280_CONTROL_M 0x27 /* 001 - t oversampling x1, 001 - p oversampling x1 11 - normal (not sleep) mode */
+#define BME280_CONTROL_M 0xA3 /* 101 - t oversampling x16, 000 - p oversampling x0 11 - normal (not sleep) mode */
+
 #define BME280_7BIT_MASK 0x7F
 #define BME280_COEFF1_ADDR 0x88
 #define BME280_COEFF2_ADDR 0xE1
@@ -189,8 +194,8 @@ const uint8_t sensor[3][8][3][3] =
 
 #define BME680_CMD_SIZE 1
 #define BME680_CFG_SIZE 2
-#define BME680_MEASUREMENT_DELAY 15  /* HIGH = 15 MID=6 LOW=4 */
-#define BME680_RESET_DURATION 15 /* should be 15 */
+#define BME680_MEASUREMENT_DELAY 20  /* HIGH = 15 MID=6 LOW=4 */
+#define BME680_RESET_DURATION 150 /* should be 15 */
 #define BME680_READ_ALL 0x1D
 #define BME680_READ_ALL_SIZE 15
 #define BME680_READ_T 0x22
@@ -200,12 +205,12 @@ const uint8_t sensor[3][8][3][3] =
 #define BME680_CONFIG_REG 0x75
 #define BME680_CONFIG 0x00 /* 0.5ms standby, filter off, no 3-wire SPI */
 #define BME680_CONTROL_RH_REG 0x72 /* need to update RH and M register both to apply RH */
-#define BME680_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
+//#define BME680_CONTROL_RH 0x01 /* 001 - RH oversampling x1 */
+#define BME680_CONTROL_RH 0x05 /* 101 - RH oversampling x16 */
 #define BME680_CONTROL_M_REG 0x74
-#define BME680_CONTROL_M 0x20 /* 001 - t oversampling x1, 000 - p disabled (oversampling x0) 00 - sleep mode */
+//#define BME680_CONTROL_M 0x20 /* 001 - t oversampling x1, 000 - p disabled (oversampling x0) 00 - sleep mode */
+#define BME680_CONTROL_M 0xA0 /* 101 - t oversampling x16, 000 - p disabled (oversampling x0) 00 - sleep mode */
 #define BME680_CONTROL_M_ON 0x21
-//#define BME680_CONTROL_M 0x24 /* 001 - t oversampling x1, 001 - p oversampling x1, 00 - sleep mode */
-//#define BME680_CONTROL_M_ON 0x25
 #define BME680_CONTROL_GH_REG 0x70
 #define BME680_CONTROL_GH 0x0 /*Gas heater off*/
 #define BME680_COEFF1_ADDR 0x89
@@ -250,6 +255,7 @@ float hum = 0;
 float temp = 0;
 uint32_t temp_comp;
 int32_t temp_comp_280;
+uint8_t cycle;
 
 void setupSD ()
 {
@@ -385,13 +391,13 @@ void clean_buffers () {
 void init_sensor (uint8_t itype, uint8_t iaddr)
 {
   clean_buffers();
-  if (itype == SHT2X) {
+  if ((type == SHT2X) | (type == SI70XX)) {
     Wire.beginTransmission(iaddr);
     Wire.write(SHT2X_RESET);
     Wire.endTransmission();
     //delay(SHT_RESET_DURATION); /* since there is no other configuration, skip delay */
   }
-  if (itype == SHT3X) {
+  if ((type == SHT3X) | (type == SHT8X)) {
     Wire.beginTransmission(iaddr);
     writeBuffer[0] = SHT3X_CONTROL;
     writeBuffer[1] = SHT3X_RESET;
@@ -505,10 +511,11 @@ void get_humidity ()
         hum *= 125;
         hum /= 65536;
         hum -= 6;
+        break;
       }
     }
   }
-  if (type == SHT3X) {
+  if ((type == SHT3X) | (type == SHT8X)) {
     writeBuffer[0] = SHT3X_CLOCK_STRETCH;
     writeBuffer[1] = SHT3X_HRES_READ;
     Wire.beginTransmission(addr);
@@ -530,6 +537,7 @@ void get_humidity ()
         hum = (float)result;
         hum *= 100;
         hum /= 65535;
+        break;
       }
     }
   }
@@ -552,6 +560,7 @@ void get_humidity ()
         hum = (float)result;
         hum *= 100;
         hum /= 65536;
+        break;
       }
     }
   }
@@ -574,6 +583,7 @@ void get_humidity ()
           readBuffer[i] = Wire.read();
         }
         h1 = (uint8_t) readBuffer[BME280_H1];
+        break;
       }
     }
     Wire.beginTransmission(addr);
@@ -593,6 +603,7 @@ void get_humidity ()
         h4 = (int16_t) (((uint16_t) readBuffer[BME280_H4_MSB] << 4) | ((uint16_t)(readBuffer[BME280_H4_LSB]) & 0x0F));
         h5 = (int16_t) (((uint16_t) readBuffer[BME280_H5_MSB] << 4) | ((uint16_t)(readBuffer[BME280_H5_LSB]) >> 4));
         h6 = (int8_t) readBuffer[BME280_H6];
+        break;
       }
     }
     clean_buffers();
@@ -622,7 +633,7 @@ void get_humidity ()
                            ((int32_t)h1)) >> 4));
         hum = (float)(var32  >> 12);
         hum /= 1024;
-
+        break;
       }
     }
   }
@@ -650,6 +661,7 @@ void get_humidity ()
         h5 = (int8_t) readBuffer[BME680_H5];
         h6 = (uint8_t) readBuffer[BME680_H6];
         h7 = (int8_t) readBuffer[BME680_H7];
+        break;
       }
     }
     clean_buffers();
@@ -689,13 +701,9 @@ void get_humidity ()
         var5 = ((var3 >> 14) * (var3 >> 14)) >> 10;
         var6 = (var4 * var5) >> 1;
         calc_hum = (((var3 + var6) >> 10) * ((int32_t) 1000)) >> 12;
-        /* if (calc_hum > 100000)
-          calc_hum = 100000;
-          else if (calc_hum < 0)
-          calc_hum = 0; */
         hum = (float)calc_hum;
         hum /= 1000;
-
+        break;
       }
     }
   }
@@ -714,6 +722,7 @@ void get_humidity ()
           readBuffer[i] = Wire.read();
         }
         hum = (readBuffer[0] + (float) readBuffer[1] / 10);
+        break;
       }
     }
   }
@@ -742,11 +751,11 @@ void get_temperature () {
         temp *= 175.72;
         temp /= 65536;
         temp -= 46.85;
-
+        break;
       }
     }
   }
-  if (type == SHT3X) {
+  if ((type == SHT3X) | (type == SHT8X)) {
 
     writeBuffer[0] = SHT3X_CLOCK_STRETCH;
     writeBuffer[1] = SHT3X_HRES_READ;
@@ -770,12 +779,11 @@ void get_temperature () {
         temp *= 175;
         temp /= 65535;
         temp -= 45;
-
+        break;
       }
     }
   }
   if (type == HDC1X) {
-
     Wire.beginTransmission(addr);
     Wire.write(HDC1X_READ_T);
     Wire.endTransmission();
@@ -784,7 +792,7 @@ void get_temperature () {
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < HDC1X_DATA_SIZE) {
-        delay(HDC1X_MEASUREMENT_DELAY);
+        delay(HDC1X_MEASUREMENT_DELAY / 2);
       } else {
         for (int i = 0; i < HDC1X_DATA_SIZE; i++) {
           readBuffer[i] = Wire.read();
@@ -795,6 +803,7 @@ void get_temperature () {
         temp *= 165;
         temp /= 65536;
         temp -= 40;
+        break;
       }
     }
   }
@@ -819,6 +828,7 @@ void get_temperature () {
         t1 = (uint16_t) (((uint16_t)readBuffer[BME280_T1_MSB] << 8) | (uint16_t)readBuffer[BME280_T1_LSB]);
         t2 = (int16_t)(((uint16_t)readBuffer[BME280_T2_MSB] << 8) | (uint16_t)readBuffer[BME280_T2_LSB]);
         t3 = (int16_t)(((uint16_t)readBuffer[BME280_T3_MSB] << 8) | (uint16_t)readBuffer[BME280_T3_LSB]);
+        break;
       }
     }
     clean_buffers();
@@ -848,7 +858,7 @@ void get_temperature () {
         temp_comp_280 = var1 + var2;
         temp = (temp_comp_280 * 5 + 128) >> 8;
         temp /= 100;
-
+        break;
       }
     }
   }
@@ -872,6 +882,7 @@ void get_temperature () {
         }
         t2 = (int16_t)(((uint16_t)readBuffer[BME680_T2_MSB] << 8) | (uint16_t)readBuffer[BME680_T2_LSB]);
         t3 = readBuffer[BME680_T3];
+        break;
       }
     }
     Wire.beginTransmission(addr);
@@ -887,6 +898,7 @@ void get_temperature () {
           readBuffer[i] = Wire.read();
         }
         t1 = (((uint16_t)readBuffer[BME680_T1_MSB] << 8) | (uint16_t)readBuffer[BME680_T1_LSB]);
+        break;
       }
     }
     clean_buffers();
@@ -910,7 +922,6 @@ void get_temperature () {
         for (int i = 0; i < BME680_READ_ALL_SIZE; i++) {
           readBuffer[i] = Wire.read();
         }
-        //result =  (uint32_t) (((uint32_t) readBuffer[0] * 4096) | ((uint32_t) readBuffer[6] * 1));
         xresult =  (uint32_t) (((uint32_t) readBuffer[5] * 4096)      | ((uint32_t) readBuffer[6] * 16)    | ((uint32_t) readBuffer[7] / 16));
         int64_t var1, var2, var3 ;
         int16_t calc_temp;
@@ -922,6 +933,7 @@ void get_temperature () {
         calc_temp = (int16_t) ((( temp_comp * 5) + 128) >> 8);
         temp = (float)calc_temp;
         temp /= 100;
+        break;
       }
     }
   }
@@ -944,6 +956,7 @@ void get_temperature () {
         temp = (readBuffer[0] + (float) minor / 10);
         if (sign)  // negative temperature
           temp = -temp;
+        break;
       }
     }
   }
@@ -983,10 +996,20 @@ void readSensors ()
         if (type != EMPTY) {
           if (colm != NOCOLM) {
             x = 2 + (colm * 80); y = 44 + (28 * bus);
-            LCD.setColor(0, 0, 255);
+            if ( type == SHT8X) {
+              LCD.setColor(50, 255, 50);
+            } else {
+              LCD.setColor(50, 50, 255);
+            }
             LCD.printNumF (hum, 2, x, y, '.', 5);
+            Serial.print(hum);
+            Serial.print(",");
             x = 38 + (colm * 80); y = 12 + 46 + (28 * bus);
-            LCD.setColor(255, 255, 0);
+            if ( type == SHT8X) {
+              LCD.setColor(255, 255, 100);
+            } else {
+              LCD.setColor(255, 255, 0);
+            }
             LCD.printNumF (temp, 2, x, y, '.', 5);
           }
           csvline1  += String(hum) + ",";
@@ -995,7 +1018,8 @@ void readSensors ()
       }
     }
   }
-  Serial.println(csvline1);
+  Serial.println();
+  //Serial.println(csvline1);
   //Serial.println(csvline2);
   delay (200);
   // Write to humidity log file
@@ -1003,7 +1027,7 @@ void readSensors ()
   if (logfile1) {
     csvline1 = String(seconds) + "," + csvline1;
     logfile1.println(csvline1);
-    LCD.print(csvline1, LEFT, 280);
+    //LCD.print(csvline1, LEFT, 280);
     logfile1.close();
   } else {
     LCD.print("Cannot write RH to file", LEFT, 280);
@@ -1013,7 +1037,7 @@ void readSensors ()
   if (logfile2) {
     csvline2 = String(seconds) + "," + csvline2;
     logfile2.println(csvline2);
-    LCD.print(csvline2, LEFT, 290);
+    //LCD.print(csvline2, LEFT, 290);
     logfile2.close();
   } else {
     LCD.print("Cannot write t to file", LEFT, 290);
@@ -1025,7 +1049,7 @@ void setup()
 {
   Wire.begin();
   LCD.InitLCD();
-  Serial.begin(115200);
+  Serial.begin(9600);
   setupSD ();
   drawTable ();
   initSensors ();
@@ -1035,7 +1059,10 @@ void setup()
 
 void loop()
 {
-  //drawTable ();
   readSensors ();
-  delay(1000);
+  delay(50);
+  cycle++;
+  if ( (cycle % 5) == 0 ) {
+    drawTable ();
+  }
 }
