@@ -21,13 +21,13 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define appname "Humidity sensors tester v2.9"
+#define appname "Humidity sensors tester v3.0"
 #define header "SHT2 SHT3 BME+ Si7x HDCx SHT8"
 #define footer "https://wiki.liutyi.info/"
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-//#define csvheader "Time,SHT25,SHT35,BME680-1,SHT21,SHT35,BME680-1,SHT21,SHT31-2,BME280,SHT21-CJMCU,SHT31-2,BME280,SHT21-CJMCU,SHT31,BME280,SHT20,SHT31,DHT12,SHT20,SHT30,DHT12,SHT20,SHT30,DHT12,Si7021-1,Si7021-1,Si7021-2,Si7021-2,Si7021-3,Si7021-3,Si7021-4,HTU21d,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT31-2,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080-CJMCU,SHT85,HDC1080,HDC1080,BME680-2,HDC1080,BME680-2"
-#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280,BME280,BME280,DHT12,DHT12,DHT12,HTU21d,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HDC1080,HDC1080,HDC1080,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,BME680-2,BME680-2,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
+#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280,BME280,BME280,DHT12,DHT12,DHT12,Si7021-A,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HDC1080,HDC1080,HDC1080,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,HDC1080-CJMCU,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
+
 
 // Variables for file rotation 00-99
 #define t_base_name "tmprt"
@@ -74,7 +74,7 @@ const uint8_t sensor[3][8][3][3] =
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {DHT1X, 3, 92} }
   },
   {
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SHT2X, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
@@ -86,7 +86,7 @@ const uint8_t sensor[3][8][3][3] =
   {
     {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
@@ -112,18 +112,18 @@ const uint8_t sensor[3][8][3][3] =
 #define SHT2X_T_MEASUREMENT_DELAY 85 /* 85 - 14bit,  43 - 13 bit, 22 - 12 bit, 11 - 11 bit */
 #define SHT2X_RH_MEASUREMENT_DELAY 30 /* 29 - 12bit,  15 - 11 bit, 9 - 10 bit, 4 - 8 bit */
 #define SHT_RESET_DURATION 20 /* should be 15 */
-//#define SHT2X_READ_T 0xE3 /* HOLD the master */
-#define SHT2X_READ_T 0xF3
-//#define SHT2X_READ_RH 0xE5 /* HOLD the master */
-#define SHT2X_READ_RH 0xF5
+#define SHT2X_READ_T 0xE3 /* HOLD the master */
+//#define SHT2X_READ_T 0xF3
+#define SHT2X_READ_RH 0xE5 /* HOLD the master */
+//#define SHT2X_READ_RH 0xF5
 #define SHT2X_RESET 0xFE
 
 #define SHT3X_CMD_SIZE 2
 #define SHT3X_DATA_SIZE 6
-//#define SHT3X_CLOCK_STRETCH 0x2C
-#define SHT3X_CLOCK_STRETCH 0x24
-//#define SHT3X_HRES_READ 0x06
-#define SHT3X_HRES_READ 0x00
+#define SHT3X_CLOCK_STRETCH 0x2C
+//#define SHT3X_CLOCK_STRETCH 0x24
+#define SHT3X_HRES_READ 0x06
+//#define SHT3X_HRES_READ 0x00
 #define SHT3X_CONTROL 0x30
 #define SHT3X_RESET 0xA2
 #define SHT3X_HEATER_OFF 0x66
@@ -1049,7 +1049,7 @@ void setup()
 {
   Wire.begin();
   LCD.InitLCD();
-  Serial.begin(9600);
+  Serial.begin(115200);
   setupSD ();
   drawTable ();
   initSensors ();
