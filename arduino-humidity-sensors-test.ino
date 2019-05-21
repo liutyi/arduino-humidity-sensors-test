@@ -21,14 +21,13 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define appname "Humidity sensors tester v3.3"
-//#define header "SHT2 SHT3 BME+ Si7x HTU2 SHT8"
-#define header "SHT2 SHT3 BME+ AHT1 HTU2 SHT8"
-#define footer "https://wiki.liutyi.info/"
+#define APPNAME "Humidity sensors tester v3.4"
+const String HEADER[8] { "SH2", "SH3", "BME", "AHT", "Si7", "HTU", "SH8", "..."};
+#define FOOTER "https://wiki.liutyi.info/"
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-//#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280-A,BME280-2,BME280-2,BME280,BME280,BME280,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,Si7021-A,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HTU21d-3,HTU21d-2,HTU21d-2,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
-#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280-A,BME280-2,BME280-2,BME280,BME280,BME280,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,HTU21d-3,HTU21d-2,HTU21d-2,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
+//#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280-A,BME280-2,BME280-2,BME280,BME280,BME280,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,Si7021-A,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HTU21d-A,HTU21d-2,HTU21d-2,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
+#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280-A,BME280-2,BME280-2,BME280,BME280,BME280,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,HTU21d-A,HTU21d-2,HTU21d-2,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
 
 
 // Variables for file rotation 00-99
@@ -55,7 +54,7 @@ uint8_t multiplexer[3] = {112, 113, 114};
 #define AHT1X 9 /* includes AHT10 */
 #define SHT8X 10 /* includes SHT85 */
 #define HTU2x 11 /* includes HTU21d */
-#define DISABLED 2  /* includes Si7021 */
+#define DISABLED 2  /* includes  */
 
 // indexes name in sensor arrays
 #define get_type 0 /* indexes name in sensor arrays */
@@ -78,24 +77,24 @@ const uint8_t sensor[3][8][3][3] =
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} }
   },
   {
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, UNDEF, 64}, {EMPTY, UNDEF, 0} }
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HTU2x, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {BME680, 6, 118}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} }
+    {  {HTU2x, 6, 64}, {BME680, 7, 118}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {BME680, 7, 118}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} }
   }/*,
   {
     {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
@@ -111,8 +110,7 @@ const uint8_t sensor[3][8][3][3] =
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define SHT2X_CMD_SIZE 1
-#define SHT2X_DATA_SIZE 3
-#define SHT3X_MEASUREMENT_DELAY 16  /* HIGH = 15 MID=6 LOW=4 */
+#define SHT2X_DATA_SIZE 2
 #define SHT2X_T_MEASUREMENT_DELAY 85 /* 85 - 14bit,  43 - 13 bit, 22 - 12 bit, 11 - 11 bit */
 #define SHT2X_RH_MEASUREMENT_DELAY 30 /* 29 - 12bit,  15 - 11 bit, 9 - 10 bit, 4 - 8 bit */
 #define SHT_RESET_DURATION 20 /* should be 15 */
@@ -122,8 +120,10 @@ const uint8_t sensor[3][8][3][3] =
 #define SHT2X_READ_RH 0xF5
 #define SHT2X_RESET 0xFE
 
+
 #define SHT3X_CMD_SIZE 2
 #define SHT3X_DATA_SIZE 6
+#define SHT3X_MEASUREMENT_DELAY 16  /* HIGH = 15 MID=6 LOW=4 */
 #define SHT3X_CLOCK_STRETCH 0x2C
 //#define SHT3X_CLOCK_STRETCH 0x24
 #define SHT3X_HRES_READ 0x06
@@ -270,7 +270,7 @@ String csvline2 = "";
 long seconds;
 float hum = 0;
 float temp = 0;
-uint32_t temp_comp;
+int32_t temp_comp_680;
 int32_t temp_comp_280;
 uint8_t cycle;
 
@@ -335,24 +335,27 @@ void drawTable ()
   // Header Text (White)
   LCD.setColor(255, 255, 255);
   LCD.setBackColor(80, 80, 80);
-  LCD.print(appname, CENTER, 1);
+  LCD.print(APPNAME, CENTER, 1);
   // Footer Text (Yellow)
   LCD.setBackColor(64, 64, 64);
   LCD.setColor(255, 255, 0);
-  LCD.print(footer, CENTER, 307);
+  LCD.print(FOOTER, CENTER, 307);
   // Table title
   LCD.setBackColor(0, 0, 0);
   LCD.setColor(150, 150, 150);
   LCD.setFont(BigFont);
-  LCD.print(header, CENTER, 18);
   // Gray Frame
-  LCD.setColor(60, 60, 60);
+  //LCD.setColor(60, 60, 60);
   LCD.drawRect(0, 14, 479, 305);
   //Draw Grid and header text
+  uint8_t i = 0;
   for (int y = 14; y < 270; y += 28)
     LCD.drawLine(1, y, 479, y);
-  for (int x = 79; x < 479; x += 80)
+  for (int x = 59; x < 479; x += 60) {
+    LCD.print(HEADER[i], ( x - 55 ), 19);
     LCD.drawLine(x, 14, x, 266);
+    i++;
+  }
 }
 
 void initSensors ()
@@ -374,7 +377,8 @@ void initSensors ()
           init_sensor(type, addr);
         }
         if (colm != NOCOLM) {
-          x = 20 + (colm * 80); y = 46 + (28 * bus);
+          x = 5 + (colm * 60); 
+          y = 46 + (28 * bus);
           LCD.printNumI (addr, x, y);
         }
       }
@@ -718,7 +722,7 @@ void get_humidity ()
         }
         result =  (uint16_t) (((uint32_t) readBuffer[8] * 256) | (uint32_t) readBuffer[9]);
         int32_t var1, var2, var3, var4, var5, var6, temp_scaled, calc_hum;
-        temp_scaled =  (((int32_t) temp_comp * 5) + 128) >> 8;
+        temp_scaled =  (((int32_t) temp_comp_680 * 5) + 128) >> 8;
         var1 = (int32_t) (result - ((int32_t) ((int32_t) h1 * 16)))
                - (((temp_scaled * (int32_t) h3) / ((int32_t) 100)) >> 1);
         var2 = ((int32_t) h2
@@ -868,7 +872,7 @@ void get_temperature () {
   if (type == BME280 ) {
     uint16_t t1;
     int16_t t2, t3;
-    uint32_t result = 0;
+    uint32_t xresult = 0;
     clean_buffers();
     Wire.beginTransmission(addr);
     Wire.write(BME280_COEFF1_ADDR);
@@ -907,13 +911,15 @@ void get_temperature () {
         }
         int32_t var1, var2;
         int16_t calc_temp;
-        result = (uint32_t) (((uint32_t) readBuffer[0] << 12) | ((uint32_t) readBuffer[1] << 4) | ((uint32_t) readBuffer[2] >> 4 ));
-        
-        var1 = ((((result >> 3) - ((int32_t)t1 << 1))) * ((int32_t)t2)) >> 11;
-        var2 = (((((result >> 4) - ((int32_t)t1)) * ((result >> 4) - ((int32_t)t1))) >> 12) * ((int32_t)t3)) >> 14;
+        xresult = (uint32_t) (((uint32_t) readBuffer[0] << 12) | ((uint32_t) readBuffer[1] << 4) | ((uint32_t) readBuffer[2] >> 4 ));
+        var1 = (int32_t)((xresult / 8) - ((int32_t)t1 * 2));
+        var1 = (var1 * ((int32_t)t2)) / 2048;
+        var2 = (int32_t)((xresult / 16) - ((int32_t)t1));
+        var2 = (((var2 * var2) / 4096) * ((int32_t)t3)) / 16384;
         temp_comp_280 = (int32_t)(var1 + var2);
-        temp = (temp_comp_280 * 5 + 128) >> 8;
-        temp = (var1 + var2)/5120.0;
+        temp = (temp_comp_280 * 5 + 128) / 256;
+        //temp = (var1 + var2) / 5120.0;
+        temp /= 100;
         break;
       }
     }
@@ -985,8 +991,8 @@ void get_temperature () {
         var2 = (var1 * (int32_t) t2) >> 11;
         var3 = ((var1 >> 1) * (var1 >> 1)) >> 12;
         var3 = ((var3) * ((int32_t) t3 << 4)) >> 14;
-        temp_comp  = (int32_t) (var2 + var3);
-        calc_temp = (int16_t) ((( temp_comp * 5) + 128) >> 8);
+        temp_comp_680  = (int32_t) (var2 + var3);
+        calc_temp = (int16_t) ((( temp_comp_680 * 5) + 128) >> 8);
         temp = (float)calc_temp;
         temp /= 100;
         break;
@@ -1080,7 +1086,8 @@ void readSensors ()
         }
         if ((type != EMPTY) & (type != DISABLED)) {
           if (colm != NOCOLM) {
-            x = 2 + (colm * 80); y = 44 + (28 * bus);
+            x = 2 + (colm * 60);
+            y = 44 + (28 * bus);
             if ( type == SHT8X) {
               LCD.setColor(50, 255, 50);
             } else {
@@ -1089,7 +1096,8 @@ void readSensors ()
             LCD.printNumF (hum, 2, x, y, '.', 5);
             Serial.print(hum);
             Serial.print(",");
-            x = 38 + (colm * 80); y = 12 + 46 + (28 * bus);
+            x = 18 + (colm * 60);
+            y = 12 + 46 + (28 * bus);
             if ( type == SHT8X) {
               LCD.setColor(255, 255, 100);
             } else {
