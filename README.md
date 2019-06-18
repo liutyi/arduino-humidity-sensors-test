@@ -1,6 +1,23 @@
 # Multiple i2c sensor simultaneous reading
 Code for https://wiki.liutyi.info/display/ARDUINO/Test+i2c+humidity+sensors
 
+# arduino-humidity-sensors-test.ino
+Hardware page https://wiki.liutyi.info/display/ARDUINO/v5+Sensor+Board+project
+
+Current version with support for
+
+SHT2x
+SHT3x
+SHT85
+Si7021
+HDC1080
+BME280
+BME680
+AHT10
+HTU21d
+DHT12
+(DHT22)
+
 # mega-sd-tft-480x320-i2c-sensors.ino
 Vesrion 1.0
 
