@@ -21,25 +21,25 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v3.4"
+#define APPNAME "Humidity sensors tester v5.0"
 const String HEADER[8] { "SH2", "SH3", "BME", "AHT", "Si7", "HTU", "SH8", "..."};
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-//#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280-A,BME280-2,BME280-2,BME280,BME280,BME280,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,Si7021-A,Si7021-4,Si7021-3,Si7021-3,Si7021-2,Si7021-2,Si7021,Si7021,HTU21d-A,HTU21d-2,HTU21d-2,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
-#define csvheader "Time,SHT25,SHT21,SHT21,SHT21-CJMCU,SHT21-CJMCU,SHT20,SHT20,SHT20,SHT35,SHT35,SHT31-2,SHT31-2,SHT31,SHT31,SHT30,SHT30,BME680-1,BME680-1,BME280-A,BME280-2,BME280-2,BME280,BME280,BME280,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,HTU21d-A,HTU21d-2,HTU21d-2,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,BME680-2,BME680-2,SHT31-A,SHT85,SHT85,SHT85,SHT31-2,SHT31-2"
+#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-CJMCU,SHT21-CJMCU,SHT21,SHT21,SHT25,SHT30,SHT30,SHT31,SHT31,SHT31-2,SHT31-2,SHT35,SHT35,BME280,BME280,BME280,BME280-2,BME280-2,BME280-A,BME680-1,BME680-1,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,Si7021,Si7021,Si7021-2,Si7021-2,Si7021-2,Si7021-2,Si7021-3,Si7021-A,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d-2,HTU21d-2,HTU21d-A,SHT31-2,SHT31-2,SHT85,SHT85,SHT85,SHT31-A,BME680-2,BME680-2"
 
 
-// Variables for file rotation 00-99
+
+// Variables for file rotation 000-999
 #define t_base_name "tmprt"
 #define rh_base_name "humdt"
-const uint8_t t_base_name_size = sizeof(t_base_name);
-const uint8_t rh_base_name_size = sizeof(rh_base_name);
+const uint8_t t_base_name_size = sizeof(t_base_name)-1;
+const uint8_t rh_base_name_size = sizeof(rh_base_name)-1;
 char tFileName[] = t_base_name "000.csv";
 char rhFileName[] = rh_base_name "000.csv";
 
 // Define number and addresses of multiplexers
-uint8_t multiplexer[3] = {112, 113, 114};
+uint8_t multiplexer[4] = {112, 113, 114, 115};
 
 // Type of sensor
 #define EMPTY 0 /* slot is empty or sensor disabled */
@@ -54,7 +54,7 @@ uint8_t multiplexer[3] = {112, 113, 114};
 #define AHT1X 9 /* includes AHT10 */
 #define SHT8X 10 /* includes SHT85 */
 #define HTU2x 11 /* includes HTU21d */
-#define DISABLED 2  /* includes  */
+#define DISABLED 12  /* includes  */
 
 // indexes name in sensor arrays
 #define get_type 0 /* indexes name in sensor arrays */
@@ -64,49 +64,51 @@ uint8_t multiplexer[3] = {112, 113, 114};
 #define NOCOLM 254 /* do not display this sensor */
 
 // Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address]
-const uint8_t sensor[3][8][3][3] =
+const uint8_t sensor[4][8][3][3] =
 {
   {
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 119} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} }
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} },
+    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} }
   },
   {
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {SI70XX, 5, 64}, {EMPTY, UNDEF, 0} }
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HTU2x, 6, 64}, {BME680, 7, 118}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {BME680, 7, 118}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
     {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
     {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
     {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} }
-  }/*,
+    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+  },
   {
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
-  }*/
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+  }
 };
+// Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
+#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-CJMCU,SHT21-CJMCU,SHT21,SHT21,SHT25,SHT30,SHT30,SHT31,SHT31,SHT31-2,SHT31-2,SHT35,SHT35,BME280,BME280,BME280,BME280-2,BME280-2,BME280-A,BME680-1,BME680-1,Si7021,Si7021,Si7021-2,Si7021-2,Si7021-2,Si7021-2,Si7021-3,Si7021-A,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d-2,HTU21d-2,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define SHT2X_CMD_SIZE 1
@@ -114,10 +116,10 @@ const uint8_t sensor[3][8][3][3] =
 #define SHT2X_T_MEASUREMENT_DELAY 85 /* 85 - 14bit,  43 - 13 bit, 22 - 12 bit, 11 - 11 bit */
 #define SHT2X_RH_MEASUREMENT_DELAY 30 /* 29 - 12bit,  15 - 11 bit, 9 - 10 bit, 4 - 8 bit */
 #define SHT_RESET_DURATION 20 /* should be 15 */
-//#define SHT2X_READ_T 0xE3 /* HOLD the master */
-#define SHT2X_READ_T 0xF3
-//#define SHT2X_READ_RH 0xE5 /* HOLD the master */
-#define SHT2X_READ_RH 0xF5
+#define SHT2X_READ_T 0xE3 /* HOLD the master */
+//#define SHT2X_READ_T 0xF3
+#define SHT2X_READ_RH 0xE5 /* HOLD the master */
+//#define SHT2X_READ_RH 0xF5
 #define SHT2X_RESET 0xFE
 
 
@@ -290,9 +292,13 @@ void setupSD ()
   } else {
     LCD.print("card initialized.", LEFT, 18);
     while (SD.exists(tFileName)) {
-      if (tFileName[t_base_name_size + 1] != '9') {
+      if (tFileName[t_base_name_size + 2] != '9') {
+        tFileName[t_base_name_size + 2]++;
+      } else if (tFileName[t_base_name_size + 1] != '9') {
+        tFileName[t_base_name_size + 2] = '0';
         tFileName[t_base_name_size + 1]++;
-      } else if (tFileName[t_base_name_size] != '9') {
+      } else if (tFileName[t_base_name_size ] != '9') {
+        tFileName[t_base_name_size + 2] = '0';
         tFileName[t_base_name_size + 1] = '0';
         tFileName[t_base_name_size]++;
       } else {
@@ -300,11 +306,15 @@ void setupSD ()
         return;
       }
       while (SD.exists(rhFileName)) {
-        if (rhFileName[rh_base_name_size + 1] != '9') {
+        if (rhFileName[rh_base_name_size + 2] != '9') {
+          rhFileName[rh_base_name_size + 2]++;
+        } else if (rhFileName[rh_base_name_size + 1] != '9') {
+          rhFileName[rh_base_name_size + 2] = '0';
           rhFileName[rh_base_name_size + 1]++;
         } else if (rhFileName[rh_base_name_size] != '9') {
           rhFileName[rh_base_name_size + 1] = '0';
-          rhFileName[rh_base_name_size]++;
+          rhFileName[rh_base_name_size + 2] = '0';
+          rhFileName[rh_base_name_size]++;          
         } else {
           LCD.print("Can't generate humidity file name", LEFT, 36);
           return;
@@ -351,7 +361,7 @@ void drawTable ()
   uint8_t i = 0;
   for (int y = 14; y < 270; y += 28)
     LCD.drawLine(1, y, 479, y);
-  for (int x = 59; x < 479; x += 60) {
+  for (int x = 59; x < 480; x += 60) {
     LCD.print(HEADER[i], ( x - 55 ), 19);
     LCD.drawLine(x, 14, x, 266);
     i++;
@@ -377,7 +387,7 @@ void initSensors ()
           init_sensor(type, addr);
         }
         if (colm != NOCOLM) {
-          x = 5 + (colm * 60); 
+          x = 5 + (colm * 60);
           y = 46 + (28 * bus);
           LCD.printNumI (addr, x, y);
         }
@@ -387,7 +397,7 @@ void initSensors ()
 }
 
 void choose_i2c_bus() {
-  for (uint8_t i = 0; i < 3; i++) {
+  for (uint8_t i = 0; i < sizeof(multiplexer); i++) {
     uint8_t addr = multiplexer[i];
     Wire.beginTransmission(addr);
     if ( i == mux ) {
