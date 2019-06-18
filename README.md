@@ -1,5 +1,5 @@
 # Multiple i2c sensor simultaneous reading
-Code for https://wiki.liutyi.info/display/ARDUINO/Compare+multiple+sensors+data
+Code for https://wiki.liutyi.info/display/ARDUINO/Test+i2c+humidity+sensors
 
 # mega-sd-tft-480x320-i2c-sensors.ino
 Vesrion 1.0
