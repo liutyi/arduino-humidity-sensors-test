@@ -21,8 +21,8 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v5.0"
-const String HEADER[8] { "SH2", "SH3", "BME", "AHT", "Si7", "HTU", "SH8", "..."};
+#define APPNAME "Humidity sensors tester v5.1"
+const String HEADER[8] { "SH2", "SH3", "BME", "Si7", "HTU", "SH8", "AHT", "HDC"};
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
@@ -39,7 +39,7 @@ char tFileName[] = t_base_name "000.csv";
 char rhFileName[] = rh_base_name "000.csv";
 
 // Define number and addresses of multiplexers
-uint8_t multiplexer[4] = {112, 113, 114, 115};
+uint8_t multiplexer[5] = {112, 113, 114, 115,116};
 
 // Type of sensor
 #define EMPTY 0 /* slot is empty or sensor disabled */
@@ -54,7 +54,8 @@ uint8_t multiplexer[4] = {112, 113, 114, 115};
 #define AHT1X 9 /* includes AHT10 */
 #define SHT8X 10 /* includes SHT85 */
 #define HTU2x 11 /* includes HTU21d */
-#define DISABLED 12  /* includes  */
+#define AM2320 12  /* includes AM2320 */
+#define DISABLED 13  /* includes  */
 
 // indexes name in sensor arrays
 #define get_type 0 /* indexes name in sensor arrays */
@@ -64,7 +65,7 @@ uint8_t multiplexer[4] = {112, 113, 114, 115};
 #define NOCOLM 254 /* do not display this sensor */
 
 // Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address]
-const uint8_t sensor[4][8][3][3] =
+const uint8_t sensor[5][8][3][3] =
 {
   {
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
@@ -77,38 +78,48 @@ const uint8_t sensor[4][8][3][3] =
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} }
   },
   {
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {SHT8X, 7, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {SHT3X, 7, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2x, 6, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {HTU2x, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {HTU2x, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 4, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
-  }
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+  },
+  {
+    {  {HDC1X, 8, 64}, {AM2320, 6, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 8, 64}, {AM2320, 6, 92}, {EMPTY, UNDEF, 0} }
+  }  
 };
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-CJMCU,SHT21-CJMCU,SHT21,SHT21,SHT25,SHT30,SHT30,SHT31,SHT31,SHT31-2,SHT31-2,SHT35,SHT35,BME280,BME280,BME280,BME280-2,BME280-2,BME280-A,BME680-1,BME680-1,Si7021,Si7021,Si7021-2,Si7021-2,Si7021-2,Si7021-2,Si7021-3,Si7021-A,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d-2,HTU21d-2,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10"
+#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-CJMCU,SHT21-CJMCU,SHT21,SHT21,SHT25,SHT30,SHT30,SHT31,SHT31,SHT31-2,SHT31-2,SHT35,SHT35,BME280,BME280,BME280,BME280-2,BME280-2,BME280-A,BME680-1,BME680-1,Si7021,Si7021,Si7021-2,Si7021-2,Si7021-2,Si7021-2,Si7021-3,Si7021-A,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d,HTU21d-2,HTU21d-2,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,HDC1080,HDC1080,HDC1080,HDC1080,HDC1080,HDC1080,HDC1080,HDC1080,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define SHT2X_CMD_SIZE 1
@@ -253,6 +264,15 @@ const uint8_t sensor[4][8][3][3] =
 #define AHT1X_INIT_DATA0 0x08
 #define AHT1X_INIT_DATA1 0x00
 #define AHT1X_RESET 0xBA /* Reset: 1011 1010 */
+
+#define AM2320_READ    0x03 /// function code
+#define AM2320_READ_T  0x02 /// read t
+#define AM2320_READ_H  0x00 /// read rh
+#define AM2320_DATA_SIZE 4
+#define AM2320_CMD_SIZE 3
+#define AM2320_T_MEASUREMENT_DELAY 20
+#define AM2320_RH_MEASUREMENT_DELAY 10
+
 
 uint8_t readBuffer[17] = {0}; //buffer for read from sensor
 uint8_t writeBuffer[3] = {0}; //variable to devide long i2c command
@@ -798,6 +818,38 @@ void get_humidity ()
       }
     }
   }
+  if (type == AM2320 ) {
+    uint16_t xresult;
+    //Wake up
+    Wire.beginTransmission(addr);
+    Wire.write(0x00);
+    Wire.endTransmission();
+    delay(2);
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = AM2320_READ;
+    writeBuffer[1] = AM2320_READ_H;
+    writeBuffer[2] = AM2320_DATA_SIZE;
+    for (int i = 0; i < AM2320_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(AM2320_RH_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)AM2320_DATA_SIZE);
+
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < AM2320_DATA_SIZE) {
+        delay(AHT1X_RH_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < AM2320_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        xresult = ((uint16_t)readBuffer[2] << 8) + readBuffer[3] ;
+        hum = (float)xresult;
+        hum /= 10;
+      }
+    }
+  }
 }
 
 void get_temperature () {
@@ -1062,6 +1114,40 @@ void get_temperature () {
     }
   }
 
+  if (type == AM2320 ) {
+    uint16_t xresult;
+    //Wake up
+    Wire.beginTransmission(addr);
+    Wire.write(0x00);
+    Wire.endTransmission();
+    delay(2);
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = AM2320_READ;
+    writeBuffer[1] = AM2320_READ_T;
+    writeBuffer[2] = AM2320_DATA_SIZE;
+    for (int i = 0; i < AM2320_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(AM2320_T_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)AM2320_DATA_SIZE);
+
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < AM2320_DATA_SIZE) {
+        delay(AHT1X_T_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < AM2320_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        xresult = ((uint16_t)(readBuffer[2] & 0x7F) << 8) + readBuffer[3];
+        temp = (float)xresult;
+        temp /= 10.0;
+        temp = ((readBuffer[2] & 0x80) >> 7) == 1 ? temp * (-1) : temp;
+        
+      }
+    }
+  }
 }
 
 void readSensors ()
