@@ -2,21 +2,21 @@
 Code for https://wiki.liutyi.info/display/ARDUINO/Test+i2c+humidity+sensors
 
 # arduino-humidity-sensors-test.ino
-Hardware page https://wiki.liutyi.info/display/ARDUINO/v5+Sensor+Board+project
+Hardware page https://wiki.liutyi.info/display/ARDUINO/v6+Sensors+Board
 
 Current version with support for
 
-SHT2x
-SHT3x
-SHT85
-Si7021
-HDC1080
+SHT2x (SHT20, SHT21, SHT25)
+SHT3x (SHT30, SHT31, SHT35, SHT85)
+Si7021 (SHT2x compatible)
+HTU21d (SHT2x compatible)
+HDC10x0 (HDC1080)
+HDC20x0 (HDC2080)
 BME280
 BME680
-AHT10
-HTU21d
 DHT12
-(DHT22)
+AM2320
+AHT1x (AHT10, AHT15)
 
 # mega-sd-tft-480x320-i2c-sensors.ino
 Vesrion 1.0
@@ -58,5 +58,11 @@ https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BME280-DS002.
 https://www.silabs.com/documents/public/data-sheets/Si7021-A20.pdf
 
 http://www.ti.com/lit/ds/symlink/hdc1080.pdf
+
+http://www.ti.com/lit/ds/symlink/hdc2080.pdf
+
+https://wiki.liutyi.info/download/attachments/30507639/Aosong_AHT10_en_draft_0c.pdf
+
+https://wiki.liutyi.info/download/attachments/35291280/Aosong_AHT15_en_draft_0.pdf
 
 
