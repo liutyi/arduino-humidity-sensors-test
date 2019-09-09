@@ -22,20 +22,20 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v6.0"
-const String HEADER[8] { "SH2", "SH3", "BME", "Si7", "HTU", "SH8", "AHT", "HDC"};
+#define APPNAME "Humidity sensors tester v6.2"
+const String HEADER[11] { "SH2", "SH3", "BME", "Si7", "HTU", "SH8", "A10", "A15", "HD1", "HD2", "AM2"};
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Variables for file rotation 000-999
-#define t_base_name "tmprt"
-#define rh_base_name "humdt"
+#define t_base_name "t_v6_"
+#define rh_base_name "h_v6_"
 const uint8_t t_base_name_size = sizeof(t_base_name) - 1;
 const uint8_t rh_base_name_size = sizeof(rh_base_name) - 1;
 char tFileName[] = t_base_name "000.csv";
 char rhFileName[] = rh_base_name "000.csv";
 
 // Define number and addresses of multiplexers
-uint8_t multiplexer[5] = {112, 113, 114, 115, 116};
+uint8_t multiplexer[6] = {112, 113, 114, 115, 116, 117};
 
 // Type of sensor
 #define EMPTY 0 /* slot is empty or sensor disabled */
@@ -62,7 +62,7 @@ uint8_t multiplexer[5] = {112, 113, 114, 115, 116};
 #define NOCOLM 254 /* do not display this sensor */
 
 // Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address]
-const uint8_t sensor[5][8][3][3] =
+const uint8_t sensor[6][8][3][3] =
 {
   {
     {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
@@ -86,7 +86,7 @@ const uint8_t sensor[5][8][3][3] =
   },
   {
     {  {HTU2X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {HDC2X, 6, 65}, {EMPTY, UNDEF, 0} },
+    {  {HTU2X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {HTU2X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HTU2X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
     {  {HTU2X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
@@ -105,18 +105,29 @@ const uint8_t sensor[5][8][3][3] =
     {  {AHT1X, 7, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
   },
   {
-    {  {HDC1X, 8, 64}, {AM2320, 6, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, UNDEF, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 8, 64}, {AM2320, 6, 92}, {EMPTY, UNDEF, 0} }
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} },
+    {  {HDC1X, 9, 64}, {AM2320, 11, 92}, {EMPTY, UNDEF, 0} }
+  },
+   {
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} },
+    {  {AHT1X, 8, 56}, {HDC2X, 10, 64}, {EMPTY, UNDEF, 0} }
   }
+
 };
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-C,SHT21-C,SHT21-G,SHT21-G,SHT25,SHT30,SHT30,SHT31,SHT31,SHT35,SHT35,SHT31-2,SHT31-2,BME280,BME280,BME280,BME280-G,BME280-G,BME280-A,BME680-C,BME680-C,Si7021,Si7021,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-G,Si7021-A,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-G,HTU21d-G,HTU21d-A,HDC2080,SHT85,SHT85,SHT85,SHT31-A,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,HDC1080-G,HDC1080-G,HDC1080-G,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320"
+#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-C,SHT21-C,SHT21-G,SHT21-G,SHT25,SHT30,SHT30,SHT31,SHT31,SHT35,SHT35,SHT31-2,SHT31-2,BME280,BME280,BME280,BME280-G,BME280-G,BME280-A,BME680-C,BME680-C,Si7021,Si7021,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-G,Si7021-A,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-G,HTU21d-G,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,HDC1080-G,HDC1080-G,HDC1080-G,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AHT15,AHT15,AHT15,AHT15,AHT15,AHT15,AHT15,AHT15,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define SHT2X_CMD_SIZE 1
@@ -159,7 +170,7 @@ const uint8_t sensor[5][8][3][3] =
 #define HDC2X_READ_RH 0x02
 #define HDC2X_CONFIG_REG 0x0F
 #define HDC2X_CONFIG_DATA 0x01 /* 00: 14b bit resolution t/RH, 00 - both t and RH, 0 - no action, 1 - measurement */
-#define HDC2X_RESET_REG 0xD0 /* 0E - Reset D0 - Reset and 1 Hz sampling */
+#define HDC2X_RESET_REG 0x0E /* 0E - Reset D0 - Reset and 1 Hz sampling */
 #define HDC2X_RESET_DATA 0x80 /* disable AMM, Heater off, High Z, Active Low, Level sensitive */
 #define HDC2X_MEASUREMENT_DELAY 10 /* t 6.1 - 14 bit 3.5 - 11bit; RH 14bit - 6.6, 11 bit - 4.0, 8bit - 2.75 */
 #define HDC2X_RESET_DURATION 3 /*After power-up, the sensor needs at most 3 ms, to be ready*/
@@ -381,7 +392,7 @@ void drawTable ()
   // Table title
   LCD.setBackColor(0, 0, 0);
   LCD.setColor(150, 150, 150);
-  LCD.setFont(BigFont);
+  LCD.setFont(SmallFont);
   // Gray Frame
   //LCD.setColor(60, 60, 60);
   LCD.drawRect(0, 14, 479, 305);
@@ -389,8 +400,8 @@ void drawTable ()
   uint8_t i = 0;
   for (int y = 14; y < 270; y += 28)
     LCD.drawLine(1, y, 479, y);
-  for (int x = 59; x < 480; x += 60) {
-    LCD.print(HEADER[i], ( x - 55 ), 19);
+  for (int x = 43; x < 490; x += 44) {
+    LCD.print(HEADER[i], ( x - 30 ), 22);
     LCD.drawLine(x, 14, x, 266);
     i++;
   }
@@ -400,7 +411,7 @@ void initSensors ()
 {
   LCD.setBackColor(0, 0, 0);
   LCD.setColor(100, 100, 0);
-  LCD.setFont(BigFont);
+  LCD.setFont(SmallFont);
   for (mux = 0; mux < sizeof(multiplexer); mux++)
   {
     for (bus = 0; bus < 8; bus++)
@@ -415,7 +426,7 @@ void initSensors ()
           init_sensor(type, addr);
         }
         if (colm != NOCOLM) {
-          x = 5 + (colm * 60);
+          x = 5 + (colm * 44);
           y = 46 + (28 * bus);
           LCD.printNumI (addr, x, y);
         }
@@ -1256,7 +1267,7 @@ void readSensors ()
         }
         if ((type != EMPTY) & (type != DISABLED)) {
           if (colm != NOCOLM) {
-            x = 2 + (colm * 60);
+            x = 2 + (colm * 44);
             y = 44 + (28 * bus);
             if ( type == SHT8X) {
               LCD.setColor(50, 255, 50);
@@ -1266,7 +1277,7 @@ void readSensors ()
             LCD.printNumF (hum, 2, x, y, '.', 5);
             Serial.print(hum);
             Serial.print(",");
-            x = 18 + (colm * 60);
+            x = 2 + (colm * 44);
             y = 12 + 46 + (28 * bus);
             if ( type == SHT8X) {
               LCD.setColor(255, 255, 100);
