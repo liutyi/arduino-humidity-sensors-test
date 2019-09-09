@@ -1,6 +1,6 @@
 /*
    Multiple i2c humidity sensors tester.
-   code for https://wiki.liutyi.info/display/ARDUINO/v4+7x8+Sensors+board+project
+   code for https://wiki.liutyi.info/display/ARDUINO/v5+Sensors+Board+project
 */
 #include <SPI.h>
 #include <SD.h>
