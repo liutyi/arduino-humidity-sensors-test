@@ -2,46 +2,19 @@
 Code for https://wiki.liutyi.info/display/ARDUINO/Test+i2c+humidity+sensors
 
 # arduino-humidity-sensors-test.ino
-Hardware page https://wiki.liutyi.info/display/ARDUINO/v6+Sensors+Board
+Hardware page https://wiki.liutyi.info/display/ARDUINO/v7+Sensors+Board
 
 Current version with support for
 
-SHT2x (SHT20, SHT21, SHT25)
-SHT3x (SHT30, SHT31, SHT35, SHT85)
-Si7021 (SHT2x compatible)
-HTU21d (SHT2x compatible)
-HDC10x0 (HDC1080)
-HDC20x0 (HDC2080)
-BME280
-BME680
-DHT12
-AM2320
-AHT1x (AHT10, AHT15)
-
-# mega-sd-tft-480x320-i2c-sensors.ino
-Vesrion 1.0
-
-SDHT
-
-Sodaq SHT2x
-
-Adafruit BME280
-
-Adafruit BME680
-
-Adafruit Sensors https://github.com/adafruit/Adafruit_Sensor
-
-DFRobot I2C Multiplexer https://wiki.liutyi.info/display/ARDUINO/DFRobot+i2c+multiplexer
-
-UTFT https://wiki.liutyi.info/display/ARDUINO/MAR3513+libraries
-
-Xreef DHT12 https://github.com/xreef/DHT12_sensor_library
-
-# humidity-sensor-tester-v2.ino
-
-Version 2.1
-
-UTFT https://wiki.liutyi.info/display/ARDUINO/MAR3513+libraries
+* SHT2x (SHT20, SHT21, SHT25)
+* SHT3x (SHT30, SHT31, SHT35, SHT85)
+* Si7021 (SHT2x compatible)
+* HTU21d (SHT2x compatible)
+* HDC10x0 (HDC1080)
+* HDC20x0 (HDC2080)
+* BMEx80 (BME280, BME680)
+* AM2320
+* AHT1x (AHT10, AHT15)
 
 # Sensors
 
