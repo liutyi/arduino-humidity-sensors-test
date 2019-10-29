@@ -26,7 +26,7 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v7.0"
+#define APPNAME "Humidity sensors tester v7.1"
 const String HEADER[11] { "SHT2x", "SHT3x", "BMEx8", "Si702", "HTU21", "SHT85", "HDC10", "HDC20", "AHT1x", "AM232"};
 #define FOOTER "https://wiki.liutyi.info/"
 
@@ -1288,7 +1288,7 @@ void readSensors ()
           csvline2  += String(temp) + ",";
           LCD.setFont(SmallFont);
           LCD.setBackColor(64, 64, 64);
-          LCD.setColor(0, 0, 0);
+          LCD.setColor(240, 240, 240);
           DateTime now = rtc.now();
           char datestr[32];
           snprintf(datestr, sizeof(datestr), "%4d-%02d-%02d", now.year(), now.month(), now.day());
@@ -1327,6 +1327,11 @@ void readSensors ()
   }
 }
 
+void SDdateTime(uint16_t* sddate, uint16_t* sdtime) {
+  DateTime now = rtc.now();
+  *sddate = FAT_DATE(now.year(), now.month(), now.day());
+  *sdtime = FAT_TIME(now.hour(), now.minute(), now.second());
+}
 void setup()
 {
   Wire.begin();
@@ -1339,15 +1344,16 @@ void setup()
     Serial.println("RTC lost power!");
   }
   setupSD ();
+  SdFile::dateTimeCallback(SDdateTime);
   drawTable ();
   initSensors ();
   delay(50);
   drawTable ();
 }
 
+
 void loop()
 {
-  DateTime now = rtc.now();
   readSensors ();
   delay(50);
   cycle++;
