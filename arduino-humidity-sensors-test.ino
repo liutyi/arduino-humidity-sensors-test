@@ -7,6 +7,10 @@
 #include <SD.h>
 #include <UTFT.h>
 #include <Wire.h>
+#include <RTClib.h>
+
+RTC_DS3231 rtc;
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 // Declare which fonts we will be using
 extern uint8_t SmallFont[];
@@ -114,7 +118,7 @@ const uint8_t sensor[6][8][3][3] =
     {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
     {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} }
   },
-   {
+  {
     {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
     {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
@@ -400,7 +404,7 @@ void drawTable ()
   uint8_t i = 0;
   for (int y = 14; y < 270; y += 28)
     LCD.drawLine(1, y, 479, y);
-  for (int x = 48; x < 480; x += 48) {
+  for (int x = 48; x < 490; x += 48) {
     LCD.print(HEADER[i], ( x - 42 ), 24);
     LCD.drawLine(x, 14, x, 266);
     i++;
@@ -1241,13 +1245,7 @@ void readSensors ()
   temp = 0;
   csvline1 = "";
   csvline2 = "";
-
-  //uptime in seconds
-  seconds = millis() / 1000;
   LCD.setFont(SmallFont);
-  LCD.setBackColor(64, 64, 64);
-  LCD.setColor(0, 0, 0);
-  LCD.printNumI (seconds, 2, 307);
   LCD.setBackColor(0, 0, 0);
   for (mux = 0; mux < sizeof(multiplexer); mux++ )
   {
@@ -1288,6 +1286,18 @@ void readSensors ()
           }
           csvline1  += String(hum) + ",";
           csvline2  += String(temp) + ",";
+          LCD.setFont(SmallFont);
+          LCD.setBackColor(64, 64, 64);
+          LCD.setColor(0, 0, 0);
+          DateTime now = rtc.now();
+          char datestr[32];
+          snprintf(datestr, sizeof(datestr), "%4d-%02d-%02d", now.year(), now.month(), now.day());
+          LCD.print (datestr, 910, 307);
+          char timestr[9];
+          snprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+          LCD.print (timestr, 2, 307);
+          LCD.setBackColor(0, 0, 0);
+
         }
       }
     }
@@ -1322,6 +1332,12 @@ void setup()
   Wire.begin();
   LCD.InitLCD();
   Serial.begin(115200);
+  if (! rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+  }
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power!");
+  }
   setupSD ();
   drawTable ();
   initSensors ();
@@ -1331,6 +1347,7 @@ void setup()
 
 void loop()
 {
+  DateTime now = rtc.now();
   readSensors ();
   delay(50);
   cycle++;
