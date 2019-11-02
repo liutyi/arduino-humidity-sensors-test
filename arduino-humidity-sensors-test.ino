@@ -26,7 +26,7 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v7.1"
+#define APPNAME "Humidity sensors tester v7.2"
 const String HEADER[11] { "SHT2x", "SHT3x", "BMEx8", "Si702", "HTU21", "SHT85", "HDC10", "HDC20", "AHT1x", "AM232"};
 #define FOOTER "https://wiki.liutyi.info/"
 
@@ -1306,9 +1306,14 @@ void readSensors ()
   //Serial.println(csvline1);
   //Serial.println(csvline2);
   // Write to humidity log file
+  DateTime now = rtc.now();
+  char datestr[32];
+  snprintf(datestr, sizeof(datestr), "%4d-%02d-%02d", now.year(), now.month(), now.day());
+  char timestr[9];
+  snprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
   logfile1 = SD.open(rhFileName, FILE_WRITE );
   if (logfile1) {
-    csvline1 = String(seconds) + "," + csvline1;
+    csvline1 = String(timestr) + "," + csvline1;
     logfile1.println(csvline1);
     //LCD.print(csvline1, LEFT, 280);
     logfile1.close();
@@ -1318,7 +1323,7 @@ void readSensors ()
   // Write to temperatures log file
   logfile2 = SD.open(tFileName, FILE_WRITE );
   if (logfile2) {
-    csvline2 = String(seconds) + "," + csvline2;
+    csvline2 = String(timestr) + "," + csvline2;
     logfile2.println(csvline2);
     //LCD.print(csvline2, LEFT, 290);
     logfile2.close();
