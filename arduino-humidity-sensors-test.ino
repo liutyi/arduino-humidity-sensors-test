@@ -1,7 +1,7 @@
 /*
    Multiple i2c humidity sensors tester.
    code for https://wiki.liutyi.info/display/ARDUINO/Test+i2c+humidity+sensors
-   HW Modification: https://wiki.liutyi.info/display/ARDUINO/v7+Sensors+Board
+   HW Modification: https://wiki.liutyi.info/display/ARDUINO/v8+Sensors+Board
 */
 #include <SPI.h>
 #include <SD.h>
@@ -26,20 +26,20 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v7.2"
+#define APPNAME "Humidity sensors tester v8.2"
 const String HEADER[11] { "SHT2x", "SHT3x", "BMEx8", "Si702", "HTU21", "SHT85", "HDC10", "HDC20", "AHT1x", "AM232"};
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Variables for file rotation 000-999
-#define t_base_name "t_v7_"
-#define rh_base_name "h_v7_"
+#define t_base_name "t_v8_"
+#define rh_base_name "h_v8_"
 const uint8_t t_base_name_size = sizeof(t_base_name) - 1;
 const uint8_t rh_base_name_size = sizeof(rh_base_name) - 1;
 char tFileName[] = t_base_name "000.csv";
 char rhFileName[] = rh_base_name "000.csv";
 
 // Define number and addresses of multiplexers
-uint8_t multiplexer[6] = {112, 113, 114, 115, 116, 117};
+uint8_t multiplexer[6] = {119, 113, 114, 115, 116, 117};
 
 // Type of sensor
 #define EMPTY 0 /* slot is empty or sensor disabled */
@@ -55,83 +55,84 @@ uint8_t multiplexer[6] = {112, 113, 114, 115, 116, 117};
 #define SHT8X 10 /* includes SHT85 */
 #define HTU2X 11 /* includes HTU21d */
 #define AM2320 12  /* includes AM2320 */
-#define HDC2X 13  /* includes  HDC2080*/
-#define DISABLED 14  /* includes  */
+#define HDC2X 13  /* includes  HDC2080 */
+#define SHTCX 14  /* includes  SHTC1 and SHTC3 */
+#define DISABLED 15  /* includes  */
 
 // indexes name in sensor arrays
 #define get_type 0 /* indexes name in sensor arrays */
 #define get_collumn 1 /* indexes name in sensor arrays */
 #define get_address 2 /* indexes name in sensor arrays */
+#define get_color 3 /* indexes name in sensor arrays */
 #define UNDEF 255 /* sensor have no position on display */
 #define NOCOLM 254 /* do not display this sensor */
 
-// Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address]
-const uint8_t sensor[6][8][3][3] =
+// Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address/get_color]
+const uint8_t sensor[6][8][3][4] =
 {
   {
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 118} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME280, 3, 119} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} },
-    {  {SHT2X, 1, 64}, {SHT3X, 2, 68}, {BME680, 3, 119} }
+    {  {SHT2X, 1, 64, 170}, {SHT3X, 2, 68, 190}, {BME280, 3, 118, 160} },
+    {  {SHT2X, 1, 64, 170}, {SHT3X, 2, 68, 190}, {BME280, 3, 118, 160} },
+    {  {SHT2X, 1, 64, 170}, {SHT3X, 2, 68, 230}, {BME280, 3, 118, 160} },
+    {  {SHT2X, 1, 64, 200}, {SHT3X, 2, 68, 230}, {BME280, 3, 118, 160} },
+    {  {SHT2X, 1, 64, 200}, {SHT3X, 2, 68, 255}, {BME280, 3, 118, 160} },
+    {  {SHT2X, 1, 64, 215}, {SHT3X, 2, 68, 255}, {DHT1X, 3, 92, 100} },
+    {  {SHT2X, 1, 64, 215}, {SHT3X, 2, 68, 220}, {DHT1X, 3, 92, 100} },
+    {  {SHT2X, 1, 64, 255}, {SHT3X, 2, 68, 220}, {DHT1X, 3, 92, 100} }
   },
   {
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {SI70XX, 4, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {SI70XX, 4, 64, 220}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 220}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 170}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 170}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 170}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 170}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {SI70XX, 4, 64, 255}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} }
   },
   {
-    {  {HTU2X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {SHT8X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {SHT3X, 6, 68}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HTU2X, 5, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {HTU2X, 5, 64, 190}, {EMPTY, UNDEF, 0, 255}, {SHTCX, 6, 112, 210} },
+    {  {HTU2X, 5, 64, 190}, {EMPTY, UNDEF, 0, 255}, {SHTCX, 6, 112, 210} },
+    {  {HTU2X, 5, 64, 190}, {SHT8X, 6, 68, 255}, {EMPTY, UNDEF, 0, 255} },
+    {  {HTU2X, 5, 64, 190}, {SHT8X, 6, 68, 255}, {EMPTY, UNDEF, 0, 255} },
+    {  {HTU2X, 5, 64, 190}, {SHT8X, 6, 68, 255}, {EMPTY, UNDEF, 0, 255} },
+    {  {HTU2X, 5, 64, 230}, {SHT3X, 6, 68, 240}, {EMPTY, UNDEF, 0, 255} },
+    {  {HTU2X, 5, 64, 230}, {EMPTY, UNDEF, 0, 255}, {SHTCX, 6, 112, 250} },
+    {  {HTU2X, 5, 64, 255}, {EMPTY, UNDEF, 0, 255}, {SHTCX, 6, 112, 250} }
   },
   {
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {AHT1X, 9, 56}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} }
   },
   {
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} },
-    {  {HDC1X, 7, 64}, {AM2320, 10, 92}, {EMPTY, UNDEF, 0} }
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} }
   },
   {
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} },
-    {  {HDC2X, 8, 64}, {EMPTY, UNDEF, 0}, {EMPTY, UNDEF, 0} }
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
+    {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} }
   }
-
 };
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-C,SHT21-C,SHT21-G,SHT21-G,SHT25,SHT30,SHT30,SHT31,SHT31,SHT35,SHT35,SHT31-2,SHT31-2,BME280,BME280,BME280,BME280-G,BME280-G,BME280-A,BME680-C,BME680-C,Si7021,Si7021,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-G,Si7021-A,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-G,HTU21d-G,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,AHT15,AHT15,AHT15,AHT15,AHT10,AHT10,AHT10,AHT10,HDC1080-G,HDC1080-G,HDC1080-G,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C"
+#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-C,SHT21-C,SHT21-G,SHT21-G,SHT25,SHT30,SHT30,SHT31,SHT31,SHT35,SHT35,SHT31-2,SHT31-2,BME280,BME280,BME280,BME280-G,BME280-G,Si7021,Si7021,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-G,Si7021-A,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-G,HTU21d-G,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,SHTC1,SHTC1,SHTC3,SHTC3,AHT15,AHT15,AHT15,AHT15,AHT10,AHT10,AHT10,AHT10,HDC1080-G,HDC1080-G,HDC1080-G,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define SHT2X_CMD_SIZE 1
@@ -296,6 +297,19 @@ const uint8_t sensor[6][8][3][3] =
 #define AM2320_T_MEASUREMENT_DELAY 20
 #define AM2320_RH_MEASUREMENT_DELAY 10
 
+#define SHTCX_CMD_SIZE 2
+#define SHTCX_DATA_SIZE 6
+#define SHTCX_MEASUREMENT_DELAY 15
+#define SHTCX_CLOCK_STRETCH_READ_T1 0x7C
+#define SHTCX_CLOCK_STRETCH_READ_T2 0xA2
+#define SHTCX_CLOCK_STRETCH_READ_H1 0x5C
+#define SHTCX_CLOCK_STRETCH_READ_H2 0x24
+#define SHTCX_READ_T1 0x78
+#define SHTCX_READ_T2 0x66
+#define SHTCX_READ_H1 0x58
+#define SHTCX_READ_H2 0xE0
+#define SHTCX_RESET1 0x80
+#define SHTCX_RESET2 0x5D
 
 uint8_t readBuffer[17] = {0}; //buffer for read from sensor
 uint8_t writeBuffer[3] = {0}; //variable to devide long i2c command
@@ -310,6 +324,7 @@ uint8_t dev;
 uint8_t type;
 uint8_t addr;
 uint8_t colm;
+uint8_t colg;
 String csvline1 = "";
 String csvline2 = "";
 long seconds;
@@ -480,6 +495,7 @@ void init_sensor (uint8_t itype, uint8_t iaddr)
     Wire.endTransmission();
     //delay(SHT_RESET_DURATION); /* since there is no other configuration, skip delay */
   }
+
   if (type == HDC1X) {
     Wire.beginTransmission(addr);
     writeBuffer[0] = HDC1X_CONFIG;
@@ -623,6 +639,32 @@ void get_humidity ()
           readBuffer[i] = Wire.read();
         }
         result = (readBuffer[3] << 8) + readBuffer[4];
+        hum = (float)result;
+        hum *= 100;
+        hum /= 65535;
+        break;
+      }
+    }
+  }
+  if (type == SHTCX) {
+    writeBuffer[0] = SHTCX_READ_H1;
+    writeBuffer[1] = SHTCX_READ_H2;
+    Wire.beginTransmission(addr);
+    for (int i = 0; i < SHTCX_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(SHTCX_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)SHTCX_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if  (Wire.available() < SHTCX_DATA_SIZE) {
+        delay(SHTCX_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < SHTCX_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[0] << 8) + readBuffer[1];
         hum = (float)result;
         hum *= 100;
         hum /= 65535;
@@ -895,7 +937,7 @@ void get_humidity ()
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < AM2320_DATA_SIZE) {
-        delay(AHT1X_RH_MEASUREMENT_DELAY / 4);
+        delay(AM2320_RH_MEASUREMENT_DELAY / 4);
       } else {
         for (int i = 0; i < AM2320_DATA_SIZE; i++) {
           readBuffer[i] = Wire.read();
@@ -959,6 +1001,30 @@ void get_temperature () {
         temp *= 175;
         temp /= 65535;
         temp -= 45;
+        break;
+      }
+    }
+  }
+  if (type == SHTCX) {
+    writeBuffer[0] = SHTCX_READ_T1;
+    writeBuffer[1] = SHTCX_READ_T2;
+    Wire.beginTransmission(addr);
+    for (int i = 0; i < SHTCX_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(SHTCX_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)SHTCX_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if  (Wire.available() < SHTCX_DATA_SIZE) {
+        delay(SHTCX_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < SHTCX_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[0] << 8) + readBuffer[1];
+        temp = -45 + 175 * ((float)result / 65535);
         break;
       }
     }
@@ -1224,7 +1290,7 @@ void get_temperature () {
     timeout = millis() + DEFAULT_TIMEOUT;
     while ( millis() < timeout) {
       if (Wire.available() < AM2320_DATA_SIZE) {
-        delay(AHT1X_T_MEASUREMENT_DELAY / 4);
+        delay(AM2320_T_MEASUREMENT_DELAY / 4);
       } else {
         for (int i = 0; i < AM2320_DATA_SIZE; i++) {
           readBuffer[i] = Wire.read();
@@ -1257,6 +1323,7 @@ void readSensors ()
         type = sensor[mux][bus][dev][get_type];
         addr = sensor[mux][bus][dev][get_address];
         colm = (sensor[mux][bus][dev][get_collumn] - 1);
+        colg = sensor[mux][bus][dev][get_color];
         hum = 0;
         temp = 0;
         if ((type != EMPTY) & (type != DISABLED)) {
@@ -1280,7 +1347,7 @@ void readSensors ()
             if ( type == SHT8X) {
               LCD.setColor(255, 255, 100);
             } else {
-              LCD.setColor(255, 255, 0);
+              LCD.setColor(255, colg, 0);
             }
             LCD.printNumF (temp, 2, x, y, '.', 5);
           }
@@ -1297,7 +1364,6 @@ void readSensors ()
           snprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
           LCD.print (timestr, 2, 307);
           LCD.setBackColor(0, 0, 0);
-
         }
       }
     }
@@ -1340,14 +1406,9 @@ void SDdateTime(uint16_t* sddate, uint16_t* sdtime) {
 void setup()
 {
   Wire.begin();
+  Wire.setClock(100000L);
   LCD.InitLCD();
   Serial.begin(115200);
-  if (! rtc.begin()) {
-    Serial.println("Couldn't find RTC");
-  }
-  if (rtc.lostPower()) {
-    Serial.println("RTC lost power!");
-  }
   setupSD ();
   SdFile::dateTimeCallback(SDdateTime);
   drawTable ();
