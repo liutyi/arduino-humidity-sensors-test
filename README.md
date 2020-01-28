@@ -8,13 +8,15 @@ Current version with support for
 
 * SHT2x (SHT20, SHT21, SHT25)
 * SHT3x (SHT30, SHT31, SHT35, SHT85)
+* SHTCx (SHTC1, SHTC3)
 * Si7021 (SHT2x compatible)
 * HTU21d (SHT2x compatible)
 * HDC10x0 (HDC1080)
 * HDC20x0 (HDC2080)
-* BMEx80 (BME280, BME680)
+* BMEx80 (BME280)
 * AM2320
 * AHT1x (AHT10, AHT15)
+* DHT1x (DHT12)
 
 # Sensors
 
@@ -38,4 +40,8 @@ https://wiki.liutyi.info/download/attachments/30507639/Aosong_AHT10_en_draft_0c.
 
 https://wiki.liutyi.info/download/attachments/35291280/Aosong_AHT15_en_draft_0.pdf
 
+https://wiki.liutyi.info/display/ARDUINO/SHTC1
 
+https://wiki.liutyi.info/display/ARDUINO/SHTC3
+
+https://wiki.liutyi.info/display/ARDUINO/DHT12
