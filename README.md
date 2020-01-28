@@ -2,7 +2,7 @@
 Code for https://wiki.liutyi.info/display/ARDUINO/Test+i2c+humidity+sensors
 
 # arduino-humidity-sensors-test.ino
-Hardware page https://wiki.liutyi.info/display/ARDUINO/v7+Sensors+Board
+Hardware page https://wiki.liutyi.info/display/ARDUINO/v8+Sensors+Board
 
 Current version with support for
 
