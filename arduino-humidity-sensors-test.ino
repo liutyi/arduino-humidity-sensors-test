@@ -101,14 +101,14 @@ const uint8_t sensor[6][8][3][4] =
     {  {HTU2X, 5, 64, 255}, {EMPTY, UNDEF, 0, 255}, {SHTCX, 6, 112, 250} }
   },
   {
-    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
-    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
-    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
-    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
     {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
     {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
     {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
-    {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} }
+    {  {AHT1X, 9, 56, 230}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
+    {  {AHT1X, 9, 56, 120}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} }
   },
   {
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
