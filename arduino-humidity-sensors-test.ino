@@ -26,7 +26,7 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v8.3"
+#define APPNAME "Humidity sensors tester v8.5"
 const String HEADER[11] { "SHT2x", "SHT3x", "BMEx8", "Si702", "HTU21", "SHTxx", "HDC10", "HDC20", "AHT1x", "AM232"};
 #define FOOTER "https://wiki.liutyi.info/"
 
@@ -57,7 +57,8 @@ uint8_t multiplexer[6] = {119, 113, 114, 115, 116, 117};
 #define AM2320 12  /* includes AM2320 */
 #define HDC2X 13  /* includes  HDC2080 */
 #define SHTCX 14  /* includes  SHTC1 and SHTC3 */
-#define DISABLED 15  /* includes  */
+#define CC2D 15  /* includes  SHTC1 and SHTC3 */
+#define DISABLED 16  /* includes  */
 
 // indexes name in sensor arrays
 #define get_type 0 /* indexes name in sensor arrays */
@@ -76,9 +77,9 @@ const uint8_t sensor[6][8][3][4] =
     {  {SHT2X, 1, 64, 170}, {SHT3X, 2, 68, 230}, {BME280, 3, 118, 160} },
     {  {SHT2X, 1, 64, 200}, {SHT3X, 2, 68, 230}, {BME280, 3, 118, 160} },
     {  {SHT2X, 1, 64, 200}, {SHT3X, 2, 68, 255}, {BME280, 3, 118, 160} },
-    {  {SHT2X, 1, 64, 215}, {SHT3X, 2, 68, 255}, {DHT1X, 3, 92, 100} },
-    {  {SHT2X, 1, 64, 215}, {SHT3X, 2, 68, 220}, {DHT1X, 3, 92, 100} },
-    {  {SHT2X, 1, 64, 255}, {SHT3X, 2, 68, 220}, {DHT1X, 3, 92, 100} }
+    {  {SHT2X, 1, 64, 215}, {SHT3X, 2, 68, 255}, {CC2D, 3, 40, 255} },
+    {  {SHT2X, 1, 64, 215}, {SHT3X, 2, 68, 220}, {CC2D, 3, 40, 255} },
+    {  {SHT2X, 1, 64, 255}, {SHT3X, 2, 68, 220}, {CC2D, 3, 40, 255} }
   },
   {
     {  {SI70XX, 4, 64, 220}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 150} },
@@ -114,11 +115,11 @@ const uint8_t sensor[6][8][3][4] =
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
-    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} },
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {SHTCX, 10, 112, 210} },
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {SHTCX, 10, 112, 210} },
     {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {SHTCX, 10, 112, 210} },
-    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {EMPTY, UNDEF, 0, 150} }
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {SHTCX, 10, 112, 210} },
+    {  {HDC1X, 7, 64, 180}, {AM2320, 10, 92, 100}, {SHTCX, 10, 112, 210} }
   },
   {
     {  {HDC2X, 8, 64, 210}, {EMPTY, UNDEF, 0, 150}, {EMPTY, UNDEF, 0, 100} },
@@ -132,7 +133,7 @@ const uint8_t sensor[6][8][3][4] =
   }
 };
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-C,SHT21-C,SHT21-G,SHT21-G,SHT25,SHT30,SHT30,SHT31,SHT31,SHT35,SHT35,SHT31-2,SHT31-2,BME280,BME280,BME280,BME280-G,BME280-G,DHT12,DHT12,DHT12,Si7021,Si7021,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-G,Si7021-A,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-G,HTU21d-G,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,SHTC3,SHTC3,AHT15,AHT15,AHT15,AHT15,AHT10,AHT10,AHT10,AHT10,HDC1080-G,HDC1080-G,HDC1080-G,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,SHTC1,SHTC1,SHTC1,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C"
+#define csvheader "Time,SHT20,SHT20,SHT20,SHT21-C,SHT21-C,SHT21-G,SHT21-G,SHT25,SHT30,SHT30,SHT31,SHT31,SHT35,SHT35,SHT31-2,SHT31-2,BME280,BME280,BME280,BME280-G,BME280-G,CC2D,CC2D,CC2D,Si7021,Si7021,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-Y,Si7021-G,Si7021-A,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-Y,HTU21d-G,HTU21d-G,HTU21d-A,SHT85,SHT85,SHT85,SHT31-A,SHTC3,SHTC3,AHT15,AHT15,AHT15,AHT15,AHT10,AHT10,AHT10,AHT10,HDC1080-G,HDC1080-G,HDC1080-G,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,HDC1080-C,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,AM2320,SHTC1,SHTC1,SHTC1,SHTC1,SHTC1,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C,HDC2080-C"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define SHT2X_CMD_SIZE 1
@@ -310,6 +311,14 @@ const uint8_t sensor[6][8][3][4] =
 #define SHTCX_READ_H2 0xE0
 #define SHTCX_RESET1 0x80
 #define SHTCX_RESET2 0x5D
+
+#define CC2DX_CMD_SIZE 1
+#define CC2DX_DATA_SIZE 4
+#define CC2DX_MEASUREMENT_DELAY 45
+#define CC2DX_NORMAL_MODE 0x80
+#define CC2DX_COMMAND_MODE 0xA0
+#define CC2DX_DUMMY_BYTE 0X00
+#define CC2DX_DATA_FETCH 0xDF
 
 uint8_t readBuffer[17] = {0}; //buffer for read from sensor
 uint8_t writeBuffer[3] = {0}; //variable to devide long i2c command
@@ -573,6 +582,9 @@ void init_sensor (uint8_t itype, uint8_t iaddr)
     Wire.endTransmission();
   }
   if (type == DHT1X ) {
+    //do nothing
+  }
+  if (type == CC2D ) {
     //do nothing
   }
   if (type == AHT1X) {
@@ -948,6 +960,32 @@ void get_humidity ()
       }
     }
   }
+    if (type == CC2D ) {
+    uint32_t xresult;
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = CC2DX_DATA_FETCH;
+    for (int i = 0; i < CC2DX_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(CC2DX_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)CC2DX_DATA_SIZE);
+
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < CC2DX_DATA_SIZE) {
+        delay(CC2DX_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < CC2DX_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        xresult = (((uint32_t)(readBuffer[0] & 0x3F) << 8) | ((uint32_t)readBuffer[1]));
+        hum = (float)xresult;
+        hum *= 100;
+        hum /= 16384;
+      }
+    }
+  }
 }
 
 void get_temperature () {
@@ -1300,6 +1338,33 @@ void get_temperature () {
         temp /= 10.0;
         temp = ((readBuffer[2] & 0x80) >> 7) == 1 ? temp * (-1) : temp;
 
+      }
+    }
+  }
+  if (type == CC2D ) {
+    uint32_t xresult;
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = CC2DX_DATA_FETCH;
+    for (int i = 0; i < CC2DX_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(CC2DX_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)CC2DX_DATA_SIZE);
+
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < CC2DX_DATA_SIZE) {
+        delay(CC2DX_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < CC2DX_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        xresult = (((uint32_t)readBuffer[2]) << 6) | ((uint32_t)(readBuffer[3] & ~0x03) /4);
+        temp = (float)xresult;
+        temp *= 165;
+        temp /= 16384;
+        temp -= 40;
       }
     }
   }
