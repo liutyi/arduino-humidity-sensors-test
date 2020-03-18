@@ -16,7 +16,7 @@ Current version with support for
 * BMEx80 (BME280)
 * AM2320
 * AHT1x (AHT10, AHT15)
-* DHT1x (DHT12)
+* CC2D33
 
 # Sensors
 
@@ -45,3 +45,5 @@ https://wiki.liutyi.info/display/ARDUINO/SHTC1
 https://wiki.liutyi.info/display/ARDUINO/SHTC3
 
 https://wiki.liutyi.info/display/ARDUINO/DHT12
+
+https://www.amphenol-sensors.com/en/telaire/humidity/527-humidity-sensors/3363-chipcap-2-sip
