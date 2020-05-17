@@ -31,8 +31,8 @@ const String HEADER[11] { "SHT2x", "SHT3x", "BM/CC", "Si702", "HTU21", "SHThh", 
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Variables for file rotation 000-999
-#define t_base_name "t_v8_"
-#define rh_base_name "h_v8_"
+#define t_base_name "t_v9_"
+#define rh_base_name "h_v9_"
 const uint8_t t_base_name_size = sizeof(t_base_name) - 1;
 const uint8_t rh_base_name_size = sizeof(rh_base_name) - 1;
 char tFileName[] = t_base_name "000.csv";
