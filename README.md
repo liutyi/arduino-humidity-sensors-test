@@ -15,9 +15,9 @@ Current version with support for
 * HDC20x0 (HDC2080)
 * BMEx80 (BME280)
 * AM2320
-* AHT1x (AHT10, AHT15,AHT20)
+* AHT1x (AHT15, AHT20)
 * CC2D33
-* HIH9120
+* HIH7120
 
 # Sensors
 https://wiki.liutyi.info/display/ARDUINO/Sensors
