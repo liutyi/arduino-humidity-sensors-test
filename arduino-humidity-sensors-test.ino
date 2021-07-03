@@ -38,14 +38,9 @@ const uint8_t rh_base_name_size = sizeof(rh_base_name) - 1;
 char tFileName[] = t_base_name "000.csv";
 char rhFileName[] = rh_base_name "000.csv";
 
-// Define number and addresses of multiplexers
-uint8_t multiplexer[1] = {112};
-
 // Type of sensor - not in use in this version
 #define EMPTY 0 /* slot is empty */
 #define AHT 9 /* includes AHT10 */
-#define CC2D 15  /* includes  CC2D33 */
-#define HIH7X 16  /* includes  HIH7120 */
 #define DISABLED 17  /* disabled  */
 
 // indexes name in sensor arrays
@@ -56,8 +51,13 @@ uint8_t multiplexer[1] = {112};
 #define UNDEF 255 /* sensor have no position on display */
 #define NOCOLM 254 /* do not display this sensor */
 
+#define MUXES 2 /* multiplexer active on the board */
+#define DEVS 1 /* max number of sensor on same i2c lane */
+// Define number and addresses of multiplexers
+uint8_t multiplexer[MUXES] = {112, 113};
+
 // Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address/get_color]
-const uint8_t sensor[1][8][1][4] =
+const uint8_t sensor[MUXES][8][DEVS][4] =
 {
   {
     {  {AHT, 1, 56, 240} },
@@ -68,10 +68,20 @@ const uint8_t sensor[1][8][1][4] =
     {  {AHT, 1, 56, 240} },
     {  {AHT, 1, 56, 240} },
     {  {AHT, 1, 56, 240} }
-  }
+  },
+  {
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {EMPTY, 2, 56, 240} },
+    {  {EMPTY, 2, 56, 240} },
+    {  {EMPTY, 2, 56, 240} },
+    {  {EMPTY, 2, 56, 240} },
+    {  {EMPTY, 2, 56, 240} },
+    {  {EMPTY, 2, 56, 240} }
+  },
 };
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-#define csvheader "Time,AHT10"
+#define csvheader "Time,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT20,AHT20"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define AHT_CMD_SIZE 3
@@ -209,7 +219,7 @@ void initSensors ()
     for (bus = 0; bus < 8; bus++)
     {
       choose_i2c_bus();
-      for (dev = 0; dev < 3; dev++)
+      for (dev = 0; dev < DEVS; dev++)
       {
         type = sensor[mux][bus][dev][get_type];
         addr = sensor[mux][bus][dev][get_address];
@@ -218,7 +228,7 @@ void initSensors ()
           init_sensor(type, addr);
         }
         if (colm != NOCOLM) {
-          x = 5 + (colm * 48);
+          x = 5 + (colm * 96);
           y = 46 + (28 * bus);
           LCD.printNumI (addr, x, y);
         }
@@ -316,7 +326,7 @@ void readSensors ()
   LCD.setBackColor(0, 0, 0);
   for (mux = 0; mux < sizeof(multiplexer); mux++ )
   {
-    for (dev = 0; dev < 1; dev++)
+    for (dev = 0; dev < DEVS; dev++)
     {
       for (bus = 0; bus < 8; bus++)
       {
@@ -332,7 +342,7 @@ void readSensors ()
         }
         if ((type != EMPTY) & (type != DISABLED)) {
           if (colm != NOCOLM) {
-            x = 4 + 2 + (colm * 48);
+            x = 4 + 2 + (colm * 96);
             y = 44 + (28 * bus);
             LCD.setColor(50, 50, 255);
             LCD.printNumF (hum, 2, x, y, '.', 5);
