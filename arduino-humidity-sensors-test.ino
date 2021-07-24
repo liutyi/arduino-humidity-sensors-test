@@ -26,8 +26,8 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v10.0-AHT"
-const String HEADER[5] { "AHT10", "AHT20", "AHT21", "AHT25", ""};
+#define APPNAME "Humidity sensors tester v10.1-AHT"
+const String HEADER[5] { "REF", "AHT10", "AHT20", "AHT21", "AHT25"};
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Variables for file rotation 000-999
@@ -51,37 +51,57 @@ char rhFileName[] = rh_base_name "000.csv";
 #define UNDEF 255 /* sensor have no position on display */
 #define NOCOLM 254 /* do not display this sensor */
 
-#define MUXES 2 /* multiplexer active on the board */
+#define MUXES 4 /* multiplexer active on the board */
 #define DEVS 1 /* max number of sensor on same i2c lane */
 // Define number and addresses of multiplexers
-uint8_t multiplexer[MUXES] = {112, 113};
+uint8_t multiplexer[MUXES] = {112, 113, 114, 115};
 
 // Sensor properties by [multiplexor][i2c_bus][number][get_type/get_collumn/get_address/get_color]
 const uint8_t sensor[MUXES][8][DEVS][4] =
 {
   {
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} },
-    {  {AHT, 1, 56, 240} }
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} },
+    {  {AHT, 2, 56, 240} }
   },
   {
-    {  {AHT, 2, 56, 240} },
-    {  {AHT, 2, 56, 240} },
-    {  {EMPTY, 2, 56, 240} },
-    {  {EMPTY, 2, 56, 240} },
-    {  {EMPTY, 2, 56, 240} },
-    {  {EMPTY, 2, 56, 240} },
-    {  {EMPTY, 2, 56, 240} },
-    {  {EMPTY, 2, 56, 240} }
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} },
+    {  {AHT, 3, 56, 240} }
   },
+    {
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} },
+    {  {AHT, 4, 56, 240} }
+  },
+    {
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} },
+    {  {AHT, 5, 56, 240} }
+  }
 };
 // Set header (sensor names) for csv file. leave empty if intend to substitute sensors time-to-time without firmware update
-#define csvheader "Time,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT20,AHT20"
+#define csvheader "Time,HIH7120,SHT85,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT10,AHT20,AHT20,AHT20,AHT20,AHT20,AHT20,AHT20,AHT20,AHT21,AHT21,AHT21,AHT21,AHT21,AHT21,AHT21,AHT21,AHT25,AHT25,AHT25,AHT25,AHT25,AHT25,AHT25,AHT25"
 // Sensor communication variables
 #define DEFAULT_TIMEOUT 300
 #define AHT_CMD_SIZE 3
@@ -95,6 +115,25 @@ const uint8_t sensor[MUXES][8][DEVS][4] =
 #define AHT_INIT_DATA0 0x08
 #define AHT_INIT_DATA1 0x00
 #define AHT_RESET 0xBA /* Reset: 1011 1010 */
+
+#define HIH7X_CMD_SIZE 1
+#define HIH7X_DATA_SIZE 4
+#define HIH7X_MEASUREMENT_DELAY 45
+#define HIH7X_NORMAL_MODE 0x80
+#define HIH7X_COMMAND_MODE 0xA0
+#define HIH7X_DUMMY_BYTE 0X00
+#define HIH7X_DATA_FETCH 0xDF
+
+#define SHT8X_CMD_SIZE 2
+#define SHT8X_DATA_SIZE 6
+#define SHT8X_MEASUREMENT_DELAY 16  /* HIGH = 15 MID=6 LOW=4 */
+#define SHT8X_CLOCK_STRETCH 0x2C
+#define SHT8X_HRES_READ 0x06
+#define SHT8X_CONTROL 0x30
+#define SHT8X_RESET 0xA2
+#define SHT8X_HEATER_OFF 0x66
+#define SHT8X_CLEAR_STATUS 0x41
+
 
 uint8_t readBuffer[17] = {0}; //buffer for read from sensor
 uint8_t writeBuffer[3] = {0}; //variable to devide long i2c command
@@ -214,6 +253,8 @@ void initSensors ()
   LCD.setBackColor(0, 0, 0);
   LCD.setColor(100, 100, 0);
   LCD.setFont(SmallFont);
+  root_i2c_bus();
+  init_sensor_sht85();
   for (mux = 0; mux < sizeof(multiplexer); mux++)
   {
     for (bus = 0; bus < 8; bus++)
@@ -237,6 +278,16 @@ void initSensors ()
   }
 }
 
+void root_i2c_bus()
+{
+  for (uint8_t i = 0; i < sizeof(multiplexer); i++) {
+    uint8_t addr = multiplexer[i];
+    Wire.beginTransmission(addr);
+    Wire.write(0);
+    Wire.endTransmission();
+  }
+}
+
 void choose_i2c_bus() {
   for (uint8_t i = 0; i < sizeof(multiplexer); i++) {
     uint8_t addr = multiplexer[i];
@@ -250,6 +301,8 @@ void choose_i2c_bus() {
   }
 }
 
+
+
 void clean_buffers () {
   for (uint8_t i = 0; i < sizeof(readBuffer); i++) {
     readBuffer[i] = 0;
@@ -259,10 +312,21 @@ void clean_buffers () {
   }
 }
 
+void init_sensor_sht85()
+{
+   uint8_t iaddr=68;
+   Wire.beginTransmission(iaddr);
+   writeBuffer[0] = SHT8X_CONTROL;
+   writeBuffer[1] = SHT8X_RESET;
+   for (int i = 0; i < SHT8X_CMD_SIZE; i++) {
+     Wire.write(writeBuffer[i]);
+   }
+   Wire.endTransmission();
+}  
 void init_sensor (uint8_t itype, uint8_t iaddr)
 {
   clean_buffers();
-    Wire.beginTransmission(addr);
+    Wire.beginTransmission(iaddr);
     Wire.write(AHT_RESET);
     Wire.endTransmission();
     delay(AHT_RESET_DURATION);
@@ -276,7 +340,77 @@ void init_sensor (uint8_t itype, uint8_t iaddr)
     Wire.endTransmission();
 }
 
+void get_t_and_rh_sht85 ()
+{
+    uint16_t result = 0;
+    uint32_t xresult;
+    uint8_t addr=68;
+    clean_buffers();
+    writeBuffer[0] = SHT8X_CLOCK_STRETCH;
+    writeBuffer[1] = SHT8X_HRES_READ;
+    Wire.beginTransmission(addr);
+    for (int i = 0; i < SHT8X_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(SHT8X_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)SHT8X_DATA_SIZE);
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if  (Wire.available() < SHT8X_DATA_SIZE) {
+        delay(SHT8X_MEASUREMENT_DELAY);
+      } else {
+        for (int i = 0; i < SHT8X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        result = (readBuffer[3] << 8) + readBuffer[4];
+        hum = (float)result;
+        hum *= 100;
+        hum /= 65535;
+        result = (readBuffer[0] << 8) + readBuffer[1];
+        result &= ~0x0003;
+        temp = (float)result;
+        temp *= 175.72;
+        temp /= 65536;
+        temp -= 46.85;        
+        break;
+      }
+    }
+}
+void get_t_and_rh_hih7120 ()
+{
+    uint32_t xresult;
+    clean_buffers();
+    uint8_t addr=39;
+    Wire.beginTransmission(addr);
+    writeBuffer[0] = HIH7X_DATA_FETCH;
+    for (int i = 0; i < HIH7X_CMD_SIZE; i++) {
+      Wire.write(writeBuffer[i]);
+    }
+    Wire.endTransmission();
+    delay(HIH7X_MEASUREMENT_DELAY);
+    Wire.requestFrom((uint8_t)addr, (uint8_t)HIH7X_DATA_SIZE);
 
+    timeout = millis() + DEFAULT_TIMEOUT;
+    while ( millis() < timeout) {
+      if (Wire.available() < HIH7X_DATA_SIZE) {
+        delay(HIH7X_MEASUREMENT_DELAY / 4);
+      } else {
+        for (int i = 0; i < HIH7X_DATA_SIZE; i++) {
+          readBuffer[i] = Wire.read();
+        }
+        xresult = (((uint32_t)(readBuffer[0] & 0x3F) << 8) | ((uint32_t)readBuffer[1]));
+        hum = (float)xresult;
+        hum *= 100;
+        hum /= 16384;
+        xresult = (((uint32_t)readBuffer[2]) << 6) | ((uint32_t)(readBuffer[3] & ~0x03) / 4);
+        temp = (float)xresult;
+        temp *= 165;
+        temp /= 16384;
+        temp -= 40;  
+      }
+    }        
+}
 void get_t_and_rh ()
 {
   uint16_t result = 0;
@@ -315,6 +449,34 @@ void get_t_and_rh ()
 }
 
 
+void print_data_lcd ()
+{
+            x = 4 + 2 + (colm * 96);
+            y = 44 + (28 * bus);
+            LCD.setColor(50, 50, 255);
+            LCD.printNumF (hum, 2, x, y, '.', 5);
+            Serial.print(hum);
+            Serial.print(",");
+            x = 48 + 2 + (colm * 96);
+            y = 12 + 46 + (28 * bus);
+            LCD.setColor(255, colg, 0);
+            LCD.printNumF (temp, 2, x, y, '.', 5);
+}
+
+void print_time_lcd ()
+{
+          LCD.setFont(SmallFont);
+          LCD.setBackColor(64, 64, 64);
+          LCD.setColor(240, 240, 240);
+          DateTime now = rtc.now();
+          char datestr[32];
+          snprintf(datestr, sizeof(datestr), "%4d-%02d-%02d", now.year(), now.month(), now.day());
+          LCD.print (datestr, 910, 307);
+          char timestr[9];
+          snprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+          LCD.print (timestr, 2, 307);
+          LCD.setBackColor(0, 0, 0);  
+}
 
 void readSensors ()
 {
@@ -324,6 +486,15 @@ void readSensors ()
   csvline2 = "";
   LCD.setFont(SmallFont);
   LCD.setBackColor(0, 0, 0);
+  root_i2c_bus();
+  get_t_and_rh_hih7120 ();
+  colm=0; colg=255; bus=4; print_data_lcd ();
+          csvline1  += String(hum) + ",";
+          csvline2  += String(temp) + ",";
+  get_t_and_rh_sht85 ();
+  colm=0; colg=255; bus=0; print_data_lcd ();
+          csvline1  += String(hum) + ",";
+          csvline2  += String(temp) + ",";
   for (mux = 0; mux < sizeof(multiplexer); mux++ )
   {
     for (dev = 0; dev < DEVS; dev++)
@@ -342,30 +513,11 @@ void readSensors ()
         }
         if ((type != EMPTY) & (type != DISABLED)) {
           if (colm != NOCOLM) {
-            x = 4 + 2 + (colm * 96);
-            y = 44 + (28 * bus);
-            LCD.setColor(50, 50, 255);
-            LCD.printNumF (hum, 2, x, y, '.', 5);
-            Serial.print(hum);
-            Serial.print(",");
-            x = 48 + 2 + (colm * 96);
-            y = 12 + 46 + (28 * bus);
-            LCD.setColor(255, colg, 0);
-            LCD.printNumF (temp, 2, x, y, '.', 5);
+           print_data_lcd ();
           }
           csvline1  += String(hum) + ",";
           csvline2  += String(temp) + ",";
-          LCD.setFont(SmallFont);
-          LCD.setBackColor(64, 64, 64);
-          LCD.setColor(240, 240, 240);
-          DateTime now = rtc.now();
-          char datestr[32];
-          snprintf(datestr, sizeof(datestr), "%4d-%02d-%02d", now.year(), now.month(), now.day());
-          LCD.print (datestr, 910, 307);
-          char timestr[9];
-          snprintf(timestr, sizeof(timestr), "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
-          LCD.print (timestr, 2, 307);
-          LCD.setBackColor(0, 0, 0);
+          print_time_lcd ();
         }
       }
     }
