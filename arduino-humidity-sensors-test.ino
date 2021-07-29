@@ -26,13 +26,13 @@ File logfile1;
 File logfile2;
 
 // Screen customiztion
-#define APPNAME "Humidity sensors tester v10.1-AHT"
-const String HEADER[5] { "REF", "AHT10", "AHT20", "AHT21", "AHT25"};
+#define APPNAME "Humidity sensors tester v10.2-AHT"
+const String HEADER[5] { "HIH7+SHT85", "AHT10", "AHT20", "AHT21", "AHT25"};
 #define FOOTER "https://wiki.liutyi.info/"
 
 // Variables for file rotation 000-999
-#define t_base_name "t_10_"
-#define rh_base_name "h_10_"
+#define t_base_name "t_1b_"
+#define rh_base_name "h_1b_"
 const uint8_t t_base_name_size = sizeof(t_base_name) - 1;
 const uint8_t rh_base_name_size = sizeof(rh_base_name) - 1;
 char tFileName[] = t_base_name "000.csv";
@@ -242,7 +242,7 @@ void drawTable ()
   for (int y = 14; y < 270; y += 28)
     LCD.drawLine(1, y, 479, y);
   for (int x = 96; x < 490; x += 96) {
-    LCD.print(HEADER[i], ( x - 42 ), 24);
+    LCD.print(HEADER[i], ( x - 90 ), 24);
     LCD.drawLine(x, 14, x, 266);
     i++;
   }
@@ -368,11 +368,10 @@ void get_t_and_rh_sht85 ()
         hum *= 100;
         hum /= 65535;
         result = (readBuffer[0] << 8) + readBuffer[1];
-        result &= ~0x0003;
         temp = (float)result;
-        temp *= 175.72;
-        temp /= 65536;
-        temp -= 46.85;        
+        temp *= 175;
+        temp /= 65535;
+        temp -= 45;    
         break;
       }
     }
@@ -402,11 +401,11 @@ void get_t_and_rh_hih7120 ()
         xresult = (((uint32_t)(readBuffer[0] & 0x3F) << 8) | ((uint32_t)readBuffer[1]));
         hum = (float)xresult;
         hum *= 100;
-        hum /= 16384;
-        xresult = (((uint32_t)readBuffer[2]) << 6) | ((uint32_t)(readBuffer[3] & ~0x03) / 4);
+        hum /= 16382;
+        xresult = (((uint32_t)readBuffer[2]) << 6) | ((uint32_t)(readBuffer[3] & ~0x03) >> 2);
         temp = (float)xresult;
         temp *= 165;
-        temp /= 16384;
+        temp /= 16382;
         temp -= 40;  
       }
     }        
@@ -488,11 +487,11 @@ void readSensors ()
   LCD.setBackColor(0, 0, 0);
   root_i2c_bus();
   get_t_and_rh_hih7120 ();
-  colm=0; colg=255; bus=4; print_data_lcd ();
+  colm=0; colg=255; bus=0; print_data_lcd ();
           csvline1  += String(hum) + ",";
           csvline2  += String(temp) + ",";
   get_t_and_rh_sht85 ();
-  colm=0; colg=255; bus=0; print_data_lcd ();
+  colm=0; colg=255; bus=4; print_data_lcd ();
           csvline1  += String(hum) + ",";
           csvline2  += String(temp) + ",";
   for (mux = 0; mux < sizeof(multiplexer); mux++ )
