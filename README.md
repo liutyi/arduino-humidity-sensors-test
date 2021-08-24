@@ -21,3 +21,6 @@ Current version with support for
 
 # Sensors
 https://wiki.liutyi.info/display/ARDUINO/Sensors
+
+## v10-AHT (Alternative sensors board)
+Hardware page: https://wiki.liutyi.info/display/ARDUINO/v10.1-AHT+Sensor+board
